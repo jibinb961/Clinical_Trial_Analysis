@@ -27,6 +27,7 @@ model = genai.GenerativeModel('gemini-2.0-flash-001')
 
 # Constants
 LEGACY_API_URL = "https://clinicaltrials.gov/api/legacy/full-studies"
+API_V2_URL = "https://clinicaltrials.gov/api/v2/studies"
 MAX_RESULTS_PER_PAGE = 100  # Maximum allowed by the API
 DEFAULT_NUM_STUDIES = 10
 MAX_ALLOWED_STUDIES = 1000
@@ -56,15 +57,33 @@ class ClinicalTrialInfo(BaseModel):
     status: Optional[str] = Field(default=None, description="Current status of the trial (e.g., Completed, Recruiting)")
     status_verified_date: Optional[str] = Field(default=None, description="Date when status was last verified")
 
-def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Optional[Dict]:
+def fetch_clinical_trials(search_params: Dict) -> Optional[Dict]:
     """
-    Fetch clinical trial data from ClinicalTrials.gov API using the legacy endpoint.
-    According to documentation, the legacy endpoint supports the same parameters as classic.
+    Fetch clinical trial data from ClinicalTrials.gov API using the v2 endpoint
+    with support for advanced filtering.
     
     Args:
-        search_term: The search term to query
-        min_rank: The starting rank of results
-        max_rank: The ending rank of results
+        search_params: Dictionary containing search parameters and filters
+        
+    Returns:
+        Dict containing the API response or None if the request failed
+    """
+    try:
+        # Check if we're using legacy or v2 API
+        if search_params.get("use_v2_api", True):
+            return fetch_v2_clinical_trials(search_params)
+        else:
+            return fetch_legacy_clinical_trials(search_params)
+    except Exception as e:
+        st.error(f"Error fetching clinical trials: {str(e)}")
+        return None
+
+def fetch_legacy_clinical_trials(search_params: Dict) -> Optional[Dict]:
+    """
+    Fetch clinical trial data from the legacy ClinicalTrials.gov API.
+    
+    Args:
+        search_params: Dictionary with search parameters
         
     Returns:
         Dict containing the API response or None if the request failed
@@ -72,13 +91,13 @@ def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Opt
     try:
         # XML is the only supported format for legacy endpoint according to documentation
         params = {
-            "expr": search_term,
-            "min_rnk": min_rank,
-            "max_rnk": max_rank,
+            "expr": search_params["search_term"],
+            "min_rnk": search_params["min_rank"],
+            "max_rnk": search_params["max_rank"],
             "fmt": "xml"
         }
         
-        with st.spinner(f"Fetching studies {min_rank}-{max_rank} for '{search_term}'..."):
+        with st.spinner(f"Fetching studies {search_params['min_rank']}-{search_params['max_rank']} for '{search_params['search_term']}'..."):
             # Make the request without verbose logging
             response = requests.get(LEGACY_API_URL, params=params)
             
@@ -95,10 +114,10 @@ def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Opt
                     st.error("Could not extract error content from response")
                 
                 # Try with simpler parameters as fallback
-                if min_rank > 1 or max_rank > 100:
+                if search_params["min_rank"] > 1 or search_params["max_rank"] > 100:
                     st.info("Trying with reduced result set (1-10)...")
                     simple_params = {
-                        "expr": search_term,
+                        "expr": search_params["search_term"],
                         "min_rnk": 1,
                         "max_rnk": 10,
                         "fmt": "xml"
@@ -110,8 +129,205 @@ def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Opt
                 
                 return None
     except Exception as e:
-        st.error(f"Error fetching clinical trials: {str(e)}")
+        st.error(f"Error fetching clinical trials from legacy API: {str(e)}")
         return None
+
+def fetch_v2_clinical_trials(search_params: Dict) -> Optional[Dict]:
+    """
+    Fetch clinical trial data from ClinicalTrials.gov API using the v2 endpoint
+    with support for advanced filtering.
+    
+    Args:
+        search_params: Dictionary containing search parameters and filters
+        
+    Returns:
+        Dict containing the API response or None if the request failed
+    """
+    try:
+        # Calculate current page parameters
+        min_rank = search_params.get("min_rank", 1)
+        max_rank = search_params.get("max_rank", 100)
+        page_size = max_rank - min_rank + 1
+        
+        # Base parameters for the v2 API
+        params = {
+            "format": "json",
+            "pageSize": page_size,
+            "countTotal": "true"
+        }
+        
+        # Add query parameters
+        search_term = search_params.get("search_term", "")
+        
+        # Parse if it's a disease condition or sponsor search
+        if search_params.get("is_sponsor_search", False):
+            params["query.spons"] = search_term
+        else:
+            params["query.cond"] = search_term
+        
+        # Add filter by status if specified
+        if "status_filter" in search_params and search_params["status_filter"]:
+            params["filter.overallStatus"] = search_params["status_filter"]
+        
+        # Add year filter if specified
+        if "year_filter" in search_params and search_params["year_filter"]:
+            year = search_params["year_filter"]
+            # If a specific year is provided, filter by start date
+            params["filter.advanced"] = f"AREA[StartDate]{year}"
+
+        # Add sort parameter if specified
+        if "sort_by" in search_params and search_params["sort_by"]:
+            sort_field = search_params["sort_by"]
+            sort_direction = search_params.get("sort_direction", "desc")
+            params["sort"] = f"{sort_field}:{sort_direction}"
+            
+        # Add page token if we're not on the first page
+        if "page_token" in search_params and search_params["page_token"]:
+            params["pageToken"] = search_params["page_token"]
+            
+        with st.spinner(f"Fetching studies for '{search_term}' with advanced filters..."):
+            # Make the request
+            response = requests.get(API_V2_URL, params=params)
+            
+            if response.status_code == 200:
+                return {"json_content": response.json()}
+            else:
+                st.error(f"API V2 request failed with status code: {response.status_code}")
+                
+                # Display more detailed error info
+                try:
+                    error_content = response.text[:500] + "..." if len(response.text) > 500 else response.text
+                    st.error(f"Error response content: {error_content}")
+                except:
+                    st.error("Could not extract error content from response")
+                
+                # Try with legacy API as fallback
+                st.info("Trying with legacy API as fallback...")
+                return fetch_legacy_clinical_trials({
+                    "search_term": search_term,
+                    "min_rank": min_rank,
+                    "max_rank": max_rank
+                })
+    except Exception as e:
+        st.error(f"Error fetching clinical trials from V2 API: {str(e)}")
+        return None
+
+def parse_json_response(json_content: Dict) -> List[Dict]:
+    """
+    Parse JSON response from ClinicalTrials.gov V2 API.
+    
+    Args:
+        json_content: JSON response from the API
+        
+    Returns:
+        List of dictionaries containing extracted trial data
+    """
+    try:
+        studies = []
+        
+        # Extract study data from each study in the response
+        for study in json_content.get("studies", []):
+            try:
+                study_data = {
+                    'nct_id': 'N/A',
+                    'brief_title': 'N/A',
+                    'phase': 'N/A',
+                    'enrollment': 'N/A',
+                    'conditions': 'N/A',
+                    'interventions': 'N/A',
+                    'sponsor': 'N/A',
+                    'primary_outcome': 'N/A',
+                    'brief_summary': 'N/A',
+                    'status': 'N/A',
+                    'start_date': None,
+                    'primary_completion_date': None,
+                    'completion_date': None,
+                    'last_update_date': None,
+                    'status_verified_date': None
+                }
+                
+                # V2 API Response Structure
+                protocol_section = study.get("protocolSection", {})
+                
+                # Extract identification info
+                identification_module = protocol_section.get("identificationModule", {})
+                study_data['nct_id'] = identification_module.get("nctId", "N/A")
+                study_data['brief_title'] = identification_module.get("briefTitle", "N/A")
+                
+                # Extract brief summary
+                description_module = protocol_section.get("descriptionModule", {})
+                study_data['brief_summary'] = description_module.get("briefSummary", "N/A")
+                
+                # Extract phase
+                design_module = protocol_section.get("designModule", {})
+                phases = design_module.get("phases", [])
+                if phases:
+                    study_data['phase'] = ", ".join(phases)
+                
+                # Extract enrollment
+                enrollment_info = design_module.get("enrollmentInfo", {})
+                study_data['enrollment'] = str(enrollment_info.get("count", "N/A"))
+                
+                # Extract conditions
+                conditions_module = protocol_section.get("conditionsModule", {})
+                conditions = conditions_module.get("conditions", [])
+                if conditions:
+                    study_data['conditions'] = ", ".join(conditions)
+                
+                # Extract interventions
+                interventions_module = protocol_section.get("armsInterventionsModule", {})
+                interventions = interventions_module.get("interventions", [])
+                intervention_list = []
+                for intervention in interventions:
+                    int_type = intervention.get("type", "")
+                    int_name = intervention.get("name", "")
+                    if int_name:
+                        if int_type:
+                            intervention_list.append(f"{int_type}: {int_name}")
+                        else:
+                            intervention_list.append(int_name)
+                
+                if intervention_list:
+                    study_data['interventions'] = ", ".join(intervention_list)
+                
+                # Extract sponsor
+                sponsor_module = protocol_section.get("sponsorCollaboratorsModule", {})
+                lead_sponsor = sponsor_module.get("leadSponsor", {})
+                study_data['sponsor'] = lead_sponsor.get("name", "N/A")
+                
+                # Extract primary outcome
+                outcomes_module = protocol_section.get("outcomesModule", {})
+                primary_outcomes = outcomes_module.get("primaryOutcomes", [])
+                if primary_outcomes:
+                    primary_outcome = primary_outcomes[0]
+                    study_data['primary_outcome'] = primary_outcome.get("measure", "N/A")
+                
+                # Extract status
+                status_module = protocol_section.get("statusModule", {})
+                study_data['status'] = status_module.get("overallStatus", "N/A")
+                study_data['status_verified_date'] = status_module.get("statusVerifiedDate", None)
+                
+                # Extract dates
+                study_data['start_date'] = status_module.get("startDate", None)
+                study_data['primary_completion_date'] = status_module.get("primaryCompletionDate", None)
+                study_data['completion_date'] = status_module.get("completionDate", None)
+                study_data['last_update_date'] = status_module.get("lastUpdateSubmitDate", None)
+                
+                # Create a concise summary string for this study
+                study_data['concise_summary'] = create_concise_summary(study_data)
+                
+                # Add to list of studies
+                studies.append(study_data)
+                
+            except Exception as e:
+                st.warning(f"Error parsing individual study: {str(e)}")
+                continue
+                
+        return studies
+        
+    except Exception as e:
+        st.error(f"Error parsing JSON response: {str(e)}")
+        return []
 
 def dump_element_structure(element, level=0, path="", max_level=4):
     """Recursively dump the structure of an XML element for debugging."""
@@ -441,68 +657,149 @@ def analyze_studies_with_llm(studies: List[Dict]) -> Dict:
                     "insights": "Failed to generate insights. Please try again with fewer studies."
                 }
 
-def process_clinical_trials(search_term: str, num_studies: int) -> Dict:
+def process_clinical_trials(search_params: Dict) -> Dict:
     """
-    Process clinical trials data by fetching from API and parsing XML.
-    Now with batch LLM analysis instead of per-study analysis.
+    Process clinical trials data by fetching from API and parsing response
+    with support for advanced filtering.
     
     Args:
-        search_term: The search term to query
-        num_studies: Number of studies to retrieve
+        search_params: Dictionary containing search parameters and filters
         
     Returns:
         Dictionary containing processed results and analysis
     """
+    # Extract basic search parameters
+    search_term = search_params.get("search_term", "")
+    num_studies = search_params.get("num_studies", DEFAULT_NUM_STUDIES)
+    use_v2_api = search_params.get("use_v2_api", True)
+    
     # Warn if trying to retrieve more than the API allows
     if num_studies > MAX_RETRIEVABLE_STUDIES:
         st.warning(f"The API only allows retrieving the first {MAX_RETRIEVABLE_STUDIES} studies. Limiting to this number.")
         num_studies = MAX_RETRIEVABLE_STUDIES
     
     all_studies = []
-    total_batches = (num_studies + MAX_RESULTS_PER_PAGE - 1) // MAX_RESULTS_PER_PAGE
     
-    # Create progress indicators
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    processed_count = 0
-    
-    # Process in batches to respect API limits
-    for batch in range(total_batches):
-        min_rank = batch * MAX_RESULTS_PER_PAGE + 1
-        max_rank = min(min_rank + MAX_RESULTS_PER_PAGE - 1, num_studies)
+    # V2 API processing
+    if use_v2_api:
+        total_batches = (num_studies + MAX_RESULTS_PER_PAGE - 1) // MAX_RESULTS_PER_PAGE
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        processed_count = 0
+        next_page_token = None
         
-        status_text.text(f"Fetching batch {batch+1}/{total_batches} (studies {min_rank}-{max_rank})...")
-        
-        # Fetch data from API
-        api_response = fetch_clinical_trials(search_term, min_rank, max_rank)
-        
-        if not api_response:
-            st.warning(f"Failed to fetch batch {batch+1}. Continuing with next batch...")
-            continue
-        
-        # Parse XML response if present
-        studies = []
-        if "xml_content" in api_response:
-            studies = parse_xml_response(api_response["xml_content"])
-        
-        # Add studies to our collection (without verbose logging)
-        all_studies.extend(studies)
-        processed_count += len(studies)
-        progress_bar.progress(min(processed_count / num_studies, 1.0))
-        
-        # If we've processed enough studies, break
-        if processed_count >= num_studies:
-            break
+        # Process in batches to respect API limits
+        for batch in range(total_batches):
+            min_rank = batch * MAX_RESULTS_PER_PAGE + 1
+            max_rank = min(min_rank + MAX_RESULTS_PER_PAGE - 1, num_studies)
             
-        # If there are more batches but we didn't get any studies in this one, break
-        if len(studies) == 0 and batch < total_batches - 1:
-            st.warning("No more studies found. Stopping retrieval.")
-            break
-    
-    # Clear progress indicators
-    progress_bar.empty()
-    status_text.empty()
+            status_text.text(f"Fetching batch {batch+1}/{total_batches} (studies {min_rank}-{max_rank})...")
+            
+            # Prepare request params for this batch
+            batch_params = search_params.copy()
+            batch_params["min_rank"] = min_rank
+            batch_params["max_rank"] = max_rank
+            
+            # Use page token for pagination if we have one
+            if next_page_token:
+                batch_params["page_token"] = next_page_token
+            
+            # Fetch data from API
+            api_response = fetch_clinical_trials(batch_params)
+            
+            if not api_response:
+                st.warning(f"Failed to fetch batch {batch+1}. Continuing with next batch...")
+                continue
+            
+            # Parse response based on format
+            studies = []
+            if "json_content" in api_response:
+                # Parse JSON response for V2 API
+                json_content = api_response["json_content"]
+                studies = parse_json_response(json_content)
+                
+                # Get next page token for pagination
+                next_page_token = json_content.get("nextPageToken")
+                
+                # Get total count if available
+                if "totalCount" in json_content and batch == 0:
+                    total_count = json_content["totalCount"]
+                    st.info(f"Total studies matching criteria: {total_count}")
+                
+            elif "xml_content" in api_response:
+                # Parse XML response for Legacy API
+                studies = parse_xml_response(api_response["xml_content"])
+            
+            # Add studies to our collection
+            all_studies.extend(studies)
+            processed_count += len(studies)
+            progress_bar.progress(min(processed_count / num_studies, 1.0))
+            
+            # If we've processed enough studies, break
+            if processed_count >= num_studies:
+                break
+                
+            # If there's no next page token and we're using V2 API, we're done
+            if use_v2_api and not next_page_token:
+                break
+                
+            # If there are more batches but we didn't get any studies in this one, break
+            if len(studies) == 0 and batch < total_batches - 1:
+                st.warning("No more studies found. Stopping retrieval.")
+                break
+        
+        # Clear progress indicators
+        progress_bar.empty()
+        status_text.empty()
+        
+    # Legacy API processing (fallback)
+    else:
+        total_batches = (num_studies + MAX_RESULTS_PER_PAGE - 1) // MAX_RESULTS_PER_PAGE
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        processed_count = 0
+        
+        # Process in batches to respect API limits
+        for batch in range(total_batches):
+            min_rank = batch * MAX_RESULTS_PER_PAGE + 1
+            max_rank = min(min_rank + MAX_RESULTS_PER_PAGE - 1, num_studies)
+            
+            status_text.text(f"Fetching batch {batch+1}/{total_batches} (studies {min_rank}-{max_rank})...")
+            
+            # Fetch data from Legacy API
+            api_response = fetch_clinical_trials({
+                "use_v2_api": False,
+                "search_term": search_term,
+                "min_rank": min_rank,
+                "max_rank": max_rank
+            })
+            
+            if not api_response:
+                st.warning(f"Failed to fetch batch {batch+1}. Continuing with next batch...")
+                continue
+            
+            # Parse XML response
+            studies = []
+            if "xml_content" in api_response:
+                studies = parse_xml_response(api_response["xml_content"])
+            
+            # Add studies to our collection
+            all_studies.extend(studies)
+            processed_count += len(studies)
+            progress_bar.progress(min(processed_count / num_studies, 1.0))
+            
+            # If we've processed enough studies, break
+            if processed_count >= num_studies:
+                break
+                
+            # If there are more batches but we didn't get any studies in this one, break
+            if len(studies) == 0 and batch < total_batches - 1:
+                st.warning("No more studies found. Stopping retrieval.")
+                break
+        
+        # Clear progress indicators
+        progress_bar.empty()
+        status_text.empty()
     
     # Enrich studies with financial data
     with st.spinner("Enriching studies with financial data..."):
@@ -522,7 +819,12 @@ def process_clinical_trials(search_term: str, num_studies: int) -> Dict:
         "studies": enriched_studies,
         "analysis": analysis_results,
         "search_term": search_term,
-        "studies_found": len(enriched_studies)
+        "studies_found": len(enriched_studies),
+        "filters_applied": {
+            "year": search_params.get("year_filter"),
+            "sponsor": search_params.get("is_sponsor_search"),
+            "status": search_params.get("status_filter")
+        }
     }
 
 def display_detailed_results(results_df):
@@ -715,10 +1017,11 @@ def main():
     with st.sidebar:
         st.header("Instructions")
         st.markdown("""
-        1. Enter a search term (e.g., "diabetes", "cancer", "covid", "remdesivir")
-        2. Specify the number of studies to retrieve (max 1000)
-        3. Click "Search and Analyze"
-        4. Results will be displayed along with AI-generated insights
+        1. Enter a search term (disease/condition or sponsor)
+        2. Set filtering options (year, status, etc.)
+        3. Specify the number of studies to retrieve
+        4. Click "Search and Analyze"
+        5. Results will be displayed along with AI-generated insights
         """)
         
         st.header("About")
@@ -732,7 +1035,10 @@ def main():
         Note: Processing large numbers of trials may take time due to API rate limits.
         """)
     
-    # Search inputs
+    # Search and filtering inputs
+    st.subheader("Search and Filter Options")
+    
+    # Main search parameters
     col1, col2 = st.columns([3, 1])
     
     with col1:
@@ -744,13 +1050,111 @@ def main():
                                       max_value=MAX_ALLOWED_STUDIES, 
                                       value=DEFAULT_NUM_STUDIES)
     
+    # Advanced filtering options
+    with st.expander("Advanced Filtering Options", expanded=True):
+        filter_cols = st.columns(3)
+        
+        with filter_cols[0]:
+            search_type = st.radio(
+                "Search Type",
+                options=["Disease/Condition", "Sponsor"],
+                index=0,
+                help="Choose whether to search by disease/condition or by sponsor name"
+            )
+            is_sponsor_search = search_type == "Sponsor"
+        
+        with filter_cols[1]:
+            # Year filter dropdown
+            current_year = datetime.datetime.now().year
+            year_options = ["Any Year"] + [str(year) for year in range(current_year, current_year-20, -1)]
+            year_filter = st.selectbox(
+                "Filter by Year (Start Date)",
+                options=year_options,
+                index=0,
+                help="Filter studies by their start year"
+            )
+            # Convert "Any Year" to None for API parameter
+            year_filter = None if year_filter == "Any Year" else year_filter
+        
+        with filter_cols[2]:
+            # Status filter
+            status_options = [
+                "Any Status",
+                "RECRUITING",
+                "ACTIVE_NOT_RECRUITING",
+                "COMPLETED",
+                "NOT_YET_RECRUITING",
+                "ENROLLING_BY_INVITATION",
+                "SUSPENDED",
+                "TERMINATED",
+                "WITHDRAWN"
+            ]
+            status_filter = st.selectbox(
+                "Filter by Status",
+                options=status_options,
+                index=0,
+                help="Filter studies by their current status"
+            )
+            # Convert "Any Status" to None for API parameter
+            status_filter = None if status_filter == "Any Status" else status_filter
+        
+        # Sorting options
+        sort_cols = st.columns(2)
+        
+        with sort_cols[0]:
+            sort_options = [
+                ("Relevance", "@relevance"),
+                ("Last Update Date", "LastUpdatePostDate"),
+                ("Start Date", "StartDate"),
+                ("Completion Date", "CompletionDate"),
+                ("Enrollment Count", "EnrollmentCount")
+            ]
+            sort_by = st.selectbox(
+                "Sort Results By",
+                options=[option[0] for option in sort_options],
+                index=0,
+                help="Choose how to sort the results"
+            )
+            # Map display name to API parameter
+            sort_by_param = next((option[1] for option in sort_options if option[0] == sort_by), "@relevance")
+        
+        with sort_cols[1]:
+            sort_direction = st.radio(
+                "Sort Direction",
+                options=["Descending", "Ascending"],
+                index=0,
+                horizontal=True
+            )
+            # Convert to API parameter
+            sort_direction_param = "desc" if sort_direction == "Descending" else "asc"
+    
     # Search button
     if st.button("Search and Analyze"):
         if not search_term:
             st.error("Please enter a search term.")
         else:
+            # Prepare search parameters
+            search_params = {
+                "search_term": search_term,
+                "num_studies": num_studies,
+                "use_v2_api": True,
+                "is_sponsor_search": is_sponsor_search,
+                "year_filter": year_filter,
+                "status_filter": status_filter,
+                "sort_by": sort_by_param,
+                "sort_direction": sort_direction_param
+            }
+            
+            # Display applied filters
+            st.info(f"""
+            Searching for: {search_term} 
+            Type: {"Sponsor" if is_sponsor_search else "Disease/Condition"}
+            Filters: {f"Year: {year_filter}" if year_filter else ""} {f"Status: {status_filter}" if status_filter else ""}
+            Sorting by: {sort_by} ({sort_direction})
+            """)
+            
             # Process clinical trials
-            results = process_clinical_trials(search_term, num_studies)
+            results = process_clinical_trials(search_params)
             
             if results["studies"]:
                 # Display AI-generated insights
@@ -772,13 +1176,31 @@ def main():
                 st.subheader("Processing Summary")
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Total Studies Found", len(studies))
+                    st.metric("Total Studies Found", results["studies_found"])
                 with col2:
-                    st.metric("Search Term", search_term)
+                    search_type_label = "Sponsor" if results["filters_applied"]["sponsor"] else "Disease/Condition"
+                    st.metric(f"Search Term ({search_type_label})", results["search_term"])
                 with col3:
                     # Count studies with financial data
                     financial_studies = sum(1 for study in studies if study.get('has_financial_data', False))
                     st.metric("Studies with Financial Data", financial_studies)
+                
+                # Display filters applied
+                if any(filter_value for filter_value in results["filters_applied"].values() if filter_value):
+                    st.subheader("Filters Applied")
+                    filter_cols = st.columns(3)
+                    
+                    with filter_cols[0]:
+                        if results["filters_applied"]["year"]:
+                            st.info(f"Year: {results['filters_applied']['year']}")
+                    
+                    with filter_cols[1]:
+                        if results["filters_applied"]["status"]:
+                            st.info(f"Status: {results['filters_applied']['status']}")
+                    
+                    with filter_cols[2]:
+                        if results["filters_applied"]["sponsor"]:
+                            st.info("Search Type: Sponsor")
                 
                 # Display results table
                 st.subheader("Extracted Information")
@@ -786,7 +1208,12 @@ def main():
                 # Add financial data columns if present
                 display_cols = ['nct_id', 'brief_title', 'phase', 'enrollment', 
                                'conditions', 'interventions', 'sponsor', 
-                               'primary_outcome']
+                               'primary_outcome', 'status']
+                
+                # Add date columns if showing time-related info
+                if st.checkbox("Show Timeline Information", value=True):
+                    date_cols = ['start_date', 'primary_completion_date', 'completion_date', 'last_update_date']
+                    display_cols.extend([col for col in date_cols if col in df.columns])
                 
                 # Add financial columns if they exist
                 if 'ticker' in df.columns:
@@ -841,10 +1268,15 @@ def main():
                 
                 # Download button for CSV
                 csv = export_df.to_csv(index=False)
+                file_name = f"clinical_trial_analysis_{search_term}"
+                if results["filters_applied"]["year"]:
+                    file_name += f"_{results['filters_applied']['year']}"
+                file_name += f"_{len(studies)}.csv"
+                
                 st.download_button(
                     label="Download Results as CSV",
                     data=csv,
-                    file_name=f"clinical_trial_analysis_{search_term}_{len(studies)}.csv",
+                    file_name=file_name,
                     mime="text/csv",
                 )
                 
@@ -901,15 +1333,7 @@ def main():
                         st.session_state.watchlist = {}
                         st.success("Watchlist cleared")
             else:
-                st.error("No studies found. Please try a different search term.")
-                
-                # Provide troubleshooting info
-                st.info("""
-                Troubleshooting tips:
-                1. Try a simpler search term (e.g., use just "diabetes" instead of "type 2 diabetes")
-                2. Reduce the number of studies to retrieve
-                3. Check that the search term follows the API syntax
-                """)
+                st.error("No studies found matching your search criteria. Try adjusting your filters or search term.")
 
 if __name__ == "__main__":
     main() 
