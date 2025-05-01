@@ -57,10 +57,10 @@ def match_company_to_ticker(company_name: str) -> Optional[str]:
     
     return None
 
-# Fetch stock data for a given ticker
+# Fetch stock data for a given ticker with fallback options for problematic tickers
 def fetch_stock_data(ticker: str, days: int = 90) -> Optional[pd.DataFrame]:
     """
-    Fetch stock data for a given ticker.
+    Fetch stock data for a given ticker with fallback options for problematic tickers.
     
     Args:
         ticker: The stock ticker symbol
@@ -74,8 +74,34 @@ def fetch_stock_data(ticker: str, days: int = 90) -> Optional[pd.DataFrame]:
         end_date = datetime.datetime.now()
         start_date = end_date - datetime.timedelta(days=days)
         
-        # Fetch the data
-        stock_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
+        stock_data = pd.DataFrame()
+        
+        # Handle problematic tickers with alternative versions
+        if ticker in ["AZN", "BMY"]:
+            alternative_tickers = {
+                "AZN": ["AZN.L", "AZNCF"], # London Exchange and OTC
+                "BMY": ["BMY.MX", "BMYQF"]  # Mexico Exchange and OTC
+            }
+            
+            st.info(f"Trying alternative tickers for {ticker}...")
+            
+            for alt_ticker in alternative_tickers.get(ticker, []):
+                try:
+                    alt_stock_data = yf.download(alt_ticker, 
+                                          start=start_date, 
+                                          end=end_date, 
+                                          progress=False)
+                    if not alt_stock_data.empty:
+                        st.success(f"Successfully fetched data using alternative ticker {alt_ticker}")
+                        stock_data = alt_stock_data
+                        break
+                except Exception as e:
+                    st.warning(f"Failed with alternative ticker {alt_ticker}: {e}")
+                    continue
+        
+        # If no alternative worked or not a problematic ticker, try the original
+        if stock_data.empty:
+            stock_data = yf.download(ticker, start=start_date, end=end_date, progress=False)
         
         if stock_data.empty:
             st.warning(f"No stock data available for ticker {ticker}")
@@ -306,4 +332,211 @@ def enrich_studies_with_financial_data(studies: List[Dict]) -> List[Dict]:
         
         enriched_studies.append(enriched_study)
     
-    return enriched_studies 
+    return enriched_studies
+
+# ARIMA Model for Forecasting
+def build_arima_model(stock_data: pd.DataFrame, trial_dates: List[str]) -> Dict:
+    """
+    Build an ARIMA model for stock forecasting incorporating clinical trial dates.
+    
+    Args:
+        stock_data: DataFrame with historical stock data
+        trial_dates: List of important clinical trial dates as date strings
+        
+    Returns:
+        Dictionary with model results and forecast
+    """
+    try:
+        # Import required libraries
+        from statsmodels.tsa.arima.model import ARIMA
+        from statsmodels.tsa.stattools import adfuller
+        import warnings
+        warnings.filterwarnings("ignore")
+        
+        # Prepare data
+        price_series = stock_data['Close'].copy()
+        
+        # Check stationarity using ADF test
+        adf_result = adfuller(price_series.diff().dropna())
+        is_stationary = adf_result[1] < 0.05
+        
+        # Determine parameters
+        p, d, q = (0, 1, 0)  # Simple default
+        if not is_stationary:
+            d = 1  # First difference if not stationary
+        
+        # Create and fit ARIMA model
+        model = ARIMA(price_series, order=(p, d, q))
+        model_fit = model.fit()
+        
+        # Create forecasts for next 30 days
+        forecast = model_fit.forecast(steps=30)
+        
+        # Calculate prediction intervals
+        pred_intervals = model_fit.get_forecast(steps=30).conf_int()
+        
+        # Create prediction DataFrame
+        predictions = pd.DataFrame({
+            'forecast': forecast,
+            'lower_ci': pred_intervals.iloc[:, 0],
+            'upper_ci': pred_intervals.iloc[:, 1]
+        })
+        
+        # Add trial dates to the model results for visualization later
+        formatted_trial_dates = []
+        for date_str in trial_dates:
+            if date_str:
+                try:
+                    # Handle different date formats
+                    for fmt in ['%B %Y', '%Y-%m-%d', '%b %d, %Y']:
+                        try:
+                            date_obj = datetime.datetime.strptime(date_str, fmt)
+                            formatted_trial_dates.append(date_obj)
+                            break
+                        except:
+                            continue
+                except Exception as e:
+                    st.warning(f"Could not parse date: {date_str}, error: {e}")
+                
+        return {
+            'model': model_fit,
+            'forecast': predictions,
+            'trial_dates': formatted_trial_dates,
+            'p': p,
+            'd': d,
+            'q': q,
+            'is_stationary': is_stationary,
+            'adf_pvalue': adf_result[1]
+        }
+        
+    except Exception as e:
+        st.warning(f"Error building ARIMA model: {e}")
+        return None
+
+def plot_stock_forecast(ticker: str, stock_data: pd.DataFrame, 
+                       forecast_data: Dict, trial_data: Dict) -> plt.Figure:
+    """
+    Create stock forecast visualization with trial events marked.
+    
+    Args:
+        ticker: The stock ticker symbol
+        stock_data: DataFrame with historical stock data
+        forecast_data: Dictionary with forecast results from ARIMA model
+        trial_data: Dictionary with trial information including dates
+        
+    Returns:
+        Matplotlib figure with the plot
+    """
+    fig, ax = plt.subplots(figsize=(12, 7))
+    
+    # Plot historical data
+    ax.plot(stock_data.index, stock_data['Close'], label='Historical Prices', color='blue')
+    
+    # Get forecast data
+    forecast = forecast_data['forecast']
+    forecast_dates = pd.date_range(start=stock_data.index[-1], periods=len(forecast)+1)[1:]
+    
+    # Plot forecast
+    ax.plot(forecast_dates, forecast['forecast'], label='ARIMA Forecast', color='red', linestyle='--')
+    ax.fill_between(forecast_dates, forecast['lower_ci'], forecast['upper_ci'], 
+                   color='red', alpha=0.2, label='95% Confidence Interval')
+    
+    # Add trial dates as vertical lines
+    colors = ['purple', 'green', 'orange', 'magenta']
+    trial_events = {
+        'start_date': 'Trial Start',
+        'primary_completion_date': 'Primary Completion',
+        'completion_date': 'Completion',
+        'last_update_date': 'Last Update'
+    }
+    
+    for i, (event_type, label) in enumerate(trial_events.items()):
+        if event_type in trial_data and trial_data[event_type]:
+            try:
+                # Parse date using flexible parsing
+                date_str = trial_data[event_type]
+                for fmt in ['%B %Y', '%Y-%m-%d', '%b %d, %Y']:
+                    try:
+                        event_date = datetime.datetime.strptime(date_str, fmt)
+                        # Only show if within our graph timeframe
+                        if (event_date >= stock_data.index[0] and 
+                            (event_date <= stock_data.index[-1] or event_date <= forecast_dates[-1])):
+                            ax.axvline(x=event_date, color=colors[i % len(colors)], 
+                                      linestyle=':', alpha=0.7)
+                            y_pos = stock_data['Close'].min() + (i * (stock_data['Close'].max() - stock_data['Close'].min()) * 0.05)
+                            ax.text(event_date, y_pos, f"{label}",
+                                   rotation=90, color=colors[i % len(colors)], fontsize=10)
+                        break
+                    except:
+                        continue
+            except Exception as e:
+                st.warning(f"Error plotting event date: {e}")
+                
+    # Label axes and add title
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price ($)')
+    ax.set_title(f'{ticker} Stock Price & Forecast with Trial Events')
+    ax.legend(loc='upper left')
+    
+    # Format x-axis dates
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    
+    return fig
+
+def analyze_forecast_impact(study_data: Dict, stock_data: pd.DataFrame, 
+                          forecast_data: Dict, ticker: str) -> str:
+    """
+    Generate LLM commentary on forecast and trial impact.
+    
+    Args:
+        study_data: Dictionary with clinical trial data
+        stock_data: DataFrame with stock data
+        forecast_data: Dictionary with ARIMA model results
+        ticker: The stock ticker symbol
+        
+    Returns:
+        Summary of potential market impact based on forecast
+    """
+    from app import model
+    
+    # Extract relevant data 
+    phase = study_data.get('phase', 'N/A')
+    title = study_data.get('brief_title', 'N/A')
+    status = study_data.get('status', 'N/A')
+    start_date = study_data.get('start_date', 'N/A')
+    
+    # Calculate change metrics
+    forecast = forecast_data['forecast']
+    current_price = stock_data['Close'].iloc[-1]
+    predicted_end_price = forecast['forecast'].iloc[-1]
+    predicted_change_pct = ((predicted_end_price - current_price) / current_price) * 100
+    
+    # Create prompt for LLM
+    prompt = f"""
+    Analyze the forecasted stock price movement for {ticker} in relation to their clinical trial:
+    
+    Trial Information:
+    - Title: {title}
+    - Phase: {phase}
+    - Status: {status}
+    - Start Date: {start_date}
+    
+    Current Stock Information:
+    - Current Price: ${current_price:.2f}
+    - Forecasted Price (30 days): ${predicted_end_price:.2f}
+    - Projected Change: {predicted_change_pct:.2f}%
+    
+    Based on this information, provide a brief analysis (3-4 sentences) of:
+    1. How the clinical trial timeline might influence stock movement
+    2. What investors should watch for regarding this trial
+    3. How this forecast aligns with typical market reactions to {phase} trials
+    
+    Your analysis should focus on the relationship between clinical milestones and potential market impact.
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Unable to generate forecast analysis: {str(e)}" 

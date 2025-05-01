@@ -47,6 +47,14 @@ class ClinicalTrialInfo(BaseModel):
     has_financial_data: Optional[bool] = Field(default=False, description="Whether financial data is available for this trial")
     market_analysis: Optional[str] = Field(default=None, description="Market impact analysis from LLM")
     investment_relevance: Optional[str] = Field(default=None, description="Investment relevance rating (Low/Medium/High)")
+    
+    # New time-related fields
+    start_date: Optional[str] = Field(default=None, description="Start date of the clinical trial")
+    primary_completion_date: Optional[str] = Field(default=None, description="Primary completion date of the trial")
+    completion_date: Optional[str] = Field(default=None, description="Completion date of the trial")
+    last_update_date: Optional[str] = Field(default=None, description="Last update date of the trial")
+    status: Optional[str] = Field(default=None, description="Current status of the trial (e.g., Completed, Recruiting)")
+    status_verified_date: Optional[str] = Field(default=None, description="Date when status was last verified")
 
 def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Optional[Dict]:
     """
@@ -157,7 +165,13 @@ def parse_xml_response(xml_content: str) -> List[Dict]:
                     'interventions': 'N/A',
                     'sponsor': 'N/A',
                     'primary_outcome': 'N/A',
-                    'brief_summary': 'N/A'
+                    'brief_summary': 'N/A',
+                    'status': 'N/A',
+                    'start_date': None,
+                    'primary_completion_date': None,
+                    'completion_date': None,
+                    'last_update_date': None,
+                    'status_verified_date': None
                 }
                 
                 # Find the Study struct - this is always the parent element
@@ -266,6 +280,47 @@ def parse_xml_response(xml_content: str) -> List[Dict]:
                                     outcome_measure = primary_outcome.find("./Field[@Name='PrimaryOutcomeMeasure']")
                                     if outcome_measure is not None and outcome_measure.text:
                                         study_data['primary_outcome'] = outcome_measure.text
+                        
+                        # Extract status and dates (StatusModule)
+                        status_module = protocol_section.find("./Struct[@Name='StatusModule']")
+                        if status_module is not None:
+                            # Overall status
+                            status = status_module.find("./Field[@Name='OverallStatus']")
+                            if status is not None and status.text:
+                                study_data['status'] = status.text
+                                
+                            # Status verified date
+                            status_verified = status_module.find("./Field[@Name='StatusVerifiedDate']")
+                            if status_verified is not None and status_verified.text:
+                                study_data['status_verified_date'] = status_verified.text
+                                
+                            # Start date
+                            start_date_struct = status_module.find("./Struct[@Name='StartDateStruct']")
+                            if start_date_struct is not None:
+                                start_date = start_date_struct.find("./Field[@Name='StartDate']")
+                                if start_date is not None and start_date.text:
+                                    study_data['start_date'] = start_date.text
+                            
+                            # Primary completion date
+                            prim_comp_date_struct = status_module.find("./Struct[@Name='PrimaryCompletionDateStruct']")
+                            if prim_comp_date_struct is not None:
+                                prim_comp_date = prim_comp_date_struct.find("./Field[@Name='PrimaryCompletionDate']")
+                                if prim_comp_date is not None and prim_comp_date.text:
+                                    study_data['primary_completion_date'] = prim_comp_date.text
+                            
+                            # Completion date
+                            comp_date_struct = status_module.find("./Struct[@Name='CompletionDateStruct']")
+                            if comp_date_struct is not None:
+                                comp_date = comp_date_struct.find("./Field[@Name='CompletionDate']")
+                                if comp_date is not None and comp_date.text:
+                                    study_data['completion_date'] = comp_date.text
+                            
+                            # Last update date
+                            last_update_struct = status_module.find("./Struct[@Name='LastUpdatePostDateStruct']")
+                            if last_update_struct is not None:
+                                last_update = last_update_struct.find("./Field[@Name='LastUpdatePostDate']")
+                                if last_update is not None and last_update.text:
+                                    study_data['last_update_date'] = last_update.text
                 
                 # Only add studies that have a valid NCT ID
                 if study_data['nct_id'] != 'N/A':
@@ -307,11 +362,21 @@ def create_concise_summary(study_data: Dict) -> str:
     if enrollment != 'N/A':
         enrollment = f"{enrollment} participants"
     
+    # Include status and date information
+    status = f"Status: {study_data['status']}" if study_data['status'] != 'N/A' else ""
+    start_date = f"Started: {study_data['start_date']}" if study_data['start_date'] else ""
+    
     # Create the summary string
     summary = f"NCT ID: {study_data['nct_id']}, Title: {study_data['brief_title']}, "
     summary += f"Phase: {study_data['phase']}, Enrollment: {enrollment}, "
     summary += f"Main Intervention: {main_intervention}, Primary Outcome: {study_data['primary_outcome']}, "
     summary += f"Sponsor: {study_data['sponsor']}, Condition: {study_data['conditions']}"
+    
+    # Add status and date if available
+    if status:
+        summary += f", {status}"
+    if start_date:
+        summary += f", {start_date}"
     
     return summary
 
@@ -469,11 +534,11 @@ def display_detailed_results(results_df):
             # Remove fields not needed for display
             display_fields = ['nct_id', 'brief_title', 'phase', 'enrollment', 
                              'conditions', 'interventions', 'sponsor', 
-                             'primary_outcome']
+                             'primary_outcome', 'status']
             display_row = {k: v for k, v in row.items() if k in display_fields}
             
             # Create tabs for different types of information
-            tab1, tab2 = st.tabs(["Trial Information", "Market Analysis"])
+            tab1, tab2, tab3 = st.tabs(["Trial Information", "Market Analysis", "Forecasting"])
             
             # Tab 1: Trial Information
             with tab1:
@@ -483,6 +548,31 @@ def display_detailed_results(results_df):
                     col_idx = j % 2
                     with cols[col_idx]:
                         st.markdown(f"**{key.replace('_', ' ').title()}**: {value}")
+                
+                # Display dates if available in a new row
+                st.markdown("---")
+                st.markdown("**Timeline Information**")
+                date_cols = st.columns(4)
+                
+                with date_cols[0]:
+                    start_date = row.get('start_date')
+                    if start_date:
+                        st.markdown(f"**Start Date**: {start_date}")
+                
+                with date_cols[1]:
+                    primary_completion = row.get('primary_completion_date')
+                    if primary_completion:
+                        st.markdown(f"**Primary Completion**: {primary_completion}")
+                
+                with date_cols[2]:
+                    completion = row.get('completion_date')
+                    if completion:
+                        st.markdown(f"**Completion Date**: {completion}")
+                
+                with date_cols[3]:
+                    last_update = row.get('last_update_date')
+                    if last_update:
+                        st.markdown(f"**Last Update**: {last_update}")
                 
                 # Display brief summary if available
                 if row['brief_summary'] != 'N/A':
@@ -551,6 +641,67 @@ def display_detailed_results(results_df):
                         st.markdown("This sponsor was not matched to a publicly traded company in our database.")
                     else:
                         st.markdown("No sponsor information available for this trial.")
+                        
+            # Tab 3: Forecasting (if financial data is available)
+            with tab3:
+                if 'has_financial_data' in row and row['has_financial_data']:
+                    st.markdown("### Stock Price Forecasting with ARIMA")
+                    st.markdown("This tab provides stock price forecasting based on an ARIMA model, with clinical trial events marked on the timeline.")
+                    
+                    if st.button(f"Generate {row['ticker']} Forecast", key=f"forecast_{i}"):
+                        with st.spinner(f"Building ARIMA model for {row['ticker']}..."):
+                            # Fetch more stock data for better modeling
+                            stock_data = fin.fetch_stock_data(row['ticker'], days=365)  # Get a year of data
+                            
+                            if stock_data is not None and not stock_data.empty:
+                                # Extract trial dates
+                                trial_dates = [
+                                    row.get('start_date'),
+                                    row.get('primary_completion_date'),
+                                    row.get('completion_date'),
+                                    row.get('last_update_date')
+                                ]
+                                trial_dates = [d for d in trial_dates if d is not None]
+                                
+                                # Build ARIMA model
+                                model_results = fin.build_arima_model(stock_data, trial_dates)
+                                
+                                if model_results:
+                                    # Display model metrics
+                                    st.write("### ARIMA Model Statistics")
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("Model Parameters", f"p={model_results['p']}, d={model_results['d']}, q={model_results['q']}")
+                                    with col2:
+                                        st.metric("Data Stationarity", "Yes" if model_results['is_stationary'] else "No")
+                                    with col3:
+                                        st.metric("Days Forecasted", "30")
+                                    
+                                    # Create and show forecast plot
+                                    fig = fin.plot_stock_forecast(row['ticker'], stock_data, model_results, row)
+                                    st.pyplot(fig)
+                                    
+                                    # Display forecast values
+                                    st.write("### 30-Day Price Forecast")
+                                    forecast_df = model_results['forecast'].reset_index()
+                                    forecast_df.columns = ['Day', 'Forecast', 'Lower CI', 'Upper CI']
+                                    forecast_df['Day'] = forecast_df.index + 1
+                                    forecast_df = forecast_df[['Day', 'Forecast', 'Lower CI', 'Upper CI']]
+                                    forecast_df = forecast_df.round(2)
+                                    st.dataframe(forecast_df)
+                                    
+                                    # Generate LLM commentary
+                                    forecast_analysis = fin.analyze_forecast_impact(row, stock_data, model_results, row['ticker'])
+                                    st.write("### AI Analysis of Forecast")
+                                    st.write(forecast_analysis)
+                                else:
+                                    st.warning("Failed to build ARIMA forecast model. Check if the stock data is suitable for modeling.")
+                            else:
+                                st.warning(f"No stock data available for {row['ticker']}. Please try an alternative ticker if known.")
+                else:
+                    st.markdown("No financial data available for this clinical trial's sponsor.")
+                    st.markdown("Forecasting requires financial data from a publicly traded company.")
+                    st.markdown("This trial's sponsor could not be matched to a stock ticker in our database.")
 
 def main():
     st.set_page_config(page_title="Clinical Trial Analyzer", page_icon="🧬", layout="wide")
