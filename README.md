@@ -1,90 +1,100 @@
 # Clinical Trial Analyzer
 
-A Streamlit application that analyzes clinical trials data from ClinicalTrials.gov using Google's Gemini AI.
+A Streamlit application that retrieves and analyzes clinical trials from ClinicalTrials.gov, with AI-powered insights generation using Gemini AI. The app now includes financial analysis of biotech companies sponsoring the trials.
 
 ## Features
 
-- Search for clinical trials on ClinicalTrials.gov by keyword
-- Retrieve data for multiple studies at once (up to 1000)
-- Extract key information including:
+### Core Features
+- Search for clinical trials by keyword
+- Retrieve details for multiple studies (up to 1,000)
+- Extract key information from each trial:
   - NCT ID
-  - Brief Title
+  - Title
   - Phase
-  - Enrollment (Number of Participants)
-  - Conditions being studied
+  - Enrollment count
+  - Conditions
   - Interventions
   - Sponsor
-  - Primary Outcomes
-- AI-powered analysis of trends across all studies
-- Display results in an interactive table
-- Download results as a CSV file
-- Download AI insights as a text file
+  - Primary outcome
+  - Brief summary
+- Generate AI analysis of trial trends
+- Download results as CSV
 
-## Setup
+### Financial Analysis Features
+- Map trial sponsors to public biotech companies and their stock tickers
+- Display stock performance metrics:
+  - 90-day price and volume data 
+  - Moving averages (7-day, 30-day)
+  - Daily returns
+- Generate AI analysis of potential market impact
+- Visual stock charts with trial event markers
+- Watchlist functionality for recurring sponsors
+- Export financial metrics alongside trial data
+
+## Installation
 
 1. Clone this repository
-2. Install dependencies:
+2. Create a virtual environment:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install required packages:
    ```
    pip install -r requirements.txt
    ```
-3. Set up your Gemini API key:
-   - Create a `.env` file in the project root
-   - Add your Gemini API key to the file:
-     ```
-     GEMINI_API_KEY=your_gemini_api_key_here
-     ```
-
-## Running the Application
-
-Run the application with:
-
-```
-streamlit run app.py
-```
+4. Create a `.env` file with your Gemini API key:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
 
 ## Usage
 
-1. Enter a search term (e.g., "diabetes", "cancer", "covid", "remdesivir")
-2. Specify the number of studies to retrieve (1-1000)
-3. Click "Search and Analyze"
-4. The application will:
-   - Fetch clinical trial data from ClinicalTrials.gov API
-   - Parse the XML responses to extract structured data
-   - Generate a concise summary for each study
-   - Use Gemini AI to analyze trends across all studies
-   - Display the results in a table
-5. Download options:
-   - "Download Results as CSV" to export the structured data
-   - "Download AI Analysis as Text" to save the AI-generated insights
+1. Run the application:
+   ```
+   streamlit run app.py
+   ```
+2. Enter a search term (e.g., "diabetes", "cancer", "covid")
+3. Specify the number of studies to retrieve
+4. Click "Search and Analyze"
+5. Review the results, including:
+   - AI-generated insights
+   - Detailed trial information
+   - Financial analysis for public companies
+   - Stock performance metrics and charts
+6. Use the "Show Financial Impact" option to focus on trials from public companies
+7. Add companies to your watchlist for future reference
+8. Download the analysis as CSV
 
-## How It Works
+## Technical Details
 
-1. **Data Retrieval**: Uses the ClinicalTrials.gov API to fetch XML data for clinical trials matching the search term
-2. **XML Parsing**: Extracts structured information from complex XML responses using ElementTree
-3. **Batch Processing**: Processes studies in batches of 100 to respect API limits
-4. **AI Analysis**: Sends all study summaries to Gemini in a single call for comprehensive trend analysis
-5. **Result Presentation**: Displays both the structured data and AI insights in an organized interface
+The application uses:
+- Streamlit for the user interface
+- ClinicalTrials.gov API for retrieving trial data
+- Google's Gemini AI for generating insights
+- yfinance for retrieving stock data
+- Matplotlib for generating stock charts
+- Pandas for data manipulation
 
-## Requirements
+## Project Structure
 
-- Python 3.7+
-- Streamlit
-- Pandas
-- Google Generative AI Python SDK (genai)
-- Requests
-- python-dotenv
-- xml.etree.ElementTree
+- `app.py`: Main application code
+- `finance_module.py`: Financial analysis functions
+- `company_name_to_ticker.json`: Mapping of company names to stock tickers
+- `requirements.txt`: Required Python packages
+- `.env`: Environment variables (not included in repository)
 
-## Error Handling
+## Limitations
 
-The application includes:
-- Robust XML parsing with fallback mechanisms
-- Graceful handling of missing data fields
-- Retries for API requests with informative error messages
-- Exponential backoff for Gemini API calls
+- The ClinicalTrials.gov API has a limit of retrieving 10,000 studies
+- Only a subset of biotech companies are mapped to stock tickers
+- Financial analysis is performed on-demand, which may cause slight delays
+- Stock data is retrieved from Yahoo Finance with standard limitations
 
-## Notes
+## Contributing
 
-- The ClinicalTrials.gov API limits retrievals to 10,000 studies maximum
-- Processing a large number of studies may take time due to API rate limits
-- For best results, use specific search terms to narrow down the results 
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
