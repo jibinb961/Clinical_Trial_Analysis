@@ -8,7 +8,7 @@ import requests
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import finance_module as fin
 
@@ -22,7 +22,8 @@ if not GEMINI_API_KEY:
     st.stop()
 
 # Initialize Gemini client
-client = genai.Client(api_key=GEMINI_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-2.0-flash-001')
 
 # Constants
 LEGACY_API_URL = "https://clinicaltrials.gov/api/legacy/full-studies"
@@ -355,10 +356,7 @@ def analyze_studies_with_llm(studies: List[Dict]) -> Dict:
     # Try up to 3 times with exponential backoff
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt
-            )
+            response = model.generate_content(prompt)
             
             analysis = {
                 "insights": response.text,

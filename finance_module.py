@@ -154,7 +154,7 @@ def analyze_market_impact(study_data: Dict, stock_data: pd.DataFrame, ticker: st
     Returns:
         Summary of potential market impact
     """
-    from app import client  # Import Gemini client
+    from app import model  # Import Gemini model
     
     # Extract relevant data for analysis
     phase = study_data.get('phase', 'N/A')
@@ -196,11 +196,7 @@ def analyze_market_impact(study_data: Dict, stock_data: pd.DataFrame, ticker: st
     """
     
     try:
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt
-        )
-        
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return f"Unable to generate market impact analysis: {str(e)}"
