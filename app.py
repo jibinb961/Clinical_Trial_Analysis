@@ -10,6 +10,7 @@ from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 from google import genai
 from dotenv import load_dotenv
+import finance_module as fin
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +42,10 @@ class ClinicalTrialInfo(BaseModel):
     sponsor: Optional[str] = Field(default="N/A", description="Organization or institution sponsoring the trial")
     primary_outcome: Optional[str] = Field(default="N/A", description="Primary outcome of the study")
     brief_summary: Optional[str] = Field(default="N/A", description="Brief summary of the study")
+    ticker: Optional[str] = Field(default=None, description="Stock ticker symbol for the sponsoring company")
+    has_financial_data: Optional[bool] = Field(default=False, description="Whether financial data is available for this trial")
+    market_analysis: Optional[str] = Field(default=None, description="Market impact analysis from LLM")
+    investment_relevance: Optional[str] = Field(default=None, description="Investment relevance rating (Low/Medium/High)")
 
 def fetch_clinical_trials(search_term: str, min_rank: int, max_rank: int) -> Optional[Dict]:
     """
@@ -436,10 +441,14 @@ def process_clinical_trials(search_term: str, num_studies: int) -> Dict:
     progress_bar.empty()
     status_text.empty()
     
+    # Enrich studies with financial data
+    with st.spinner("Enriching studies with financial data..."):
+        enriched_studies = fin.enrich_studies_with_financial_data(all_studies)
+    
     # Only analyze if we have studies
-    if all_studies:
+    if enriched_studies:
         with st.spinner("Analyzing studies to identify trends and insights..."):
-            analysis_results = analyze_studies_with_llm(all_studies)
+            analysis_results = analyze_studies_with_llm(enriched_studies)
     else:
         analysis_results = {
             "error": "No studies to analyze",
@@ -447,10 +456,10 @@ def process_clinical_trials(search_term: str, num_studies: int) -> Dict:
         }
     
     return {
-        "studies": all_studies,
+        "studies": enriched_studies,
         "analysis": analysis_results,
         "search_term": search_term,
-        "studies_found": len(all_studies)
+        "studies_found": len(enriched_studies)
     }
 
 def display_detailed_results(results_df):
@@ -465,12 +474,85 @@ def display_detailed_results(results_df):
                              'primary_outcome']
             display_row = {k: v for k, v in row.items() if k in display_fields}
             
-            # Display as two columns
-            cols = st.columns(2)
-            for j, (key, value) in enumerate(display_row.items()):
-                col_idx = j % 2
-                with cols[col_idx]:
-                    st.markdown(f"**{key.replace('_', ' ').title()}**: {value}")
+            # Create tabs for different types of information
+            tab1, tab2 = st.tabs(["Trial Information", "Market Analysis"])
+            
+            # Tab 1: Trial Information
+            with tab1:
+                # Display as two columns
+                cols = st.columns(2)
+                for j, (key, value) in enumerate(display_row.items()):
+                    col_idx = j % 2
+                    with cols[col_idx]:
+                        st.markdown(f"**{key.replace('_', ' ').title()}**: {value}")
+                
+                # Display brief summary if available
+                if row['brief_summary'] != 'N/A':
+                    st.markdown("---")
+                    st.markdown("**Brief Summary**")
+                    st.markdown(row['brief_summary'])
+            
+            # Tab 2: Market Analysis (if financial data is available)
+            with tab2:
+                if 'has_financial_data' in row and row['has_financial_data']:
+                    # Display stock ticker and company
+                    st.markdown(f"**Company**: {row['sponsor']} ({row['ticker']})")
+                    
+                    # Display market metrics
+                    if 'market_metrics' in row:
+                        metrics = row['market_metrics']
+                        cols = st.columns(4)
+                        
+                        with cols[0]:
+                            st.metric("Price Change (%)", 
+                                     f"{metrics['price_change_pct']:.2f}%" if metrics['price_change_pct'] is not None else "N/A")
+                        
+                        with cols[1]:
+                            st.metric("Avg Daily Return", 
+                                     f"{metrics['avg_daily_return']:.2f}%" if metrics['avg_daily_return'] is not None else "N/A")
+                        
+                        with cols[2]:
+                            st.metric("Volatility", 
+                                     f"{metrics['volatility']:.2f}%" if metrics['volatility'] is not None else "N/A")
+                        
+                        with cols[3]:
+                            st.metric("Volume Change", 
+                                     f"{metrics['volume_change_pct']:.2f}%" if metrics['volume_change_pct'] is not None else "N/A")
+                    
+                    # Show stock chart
+                    if st.button(f"Show {row['ticker']} Stock Chart", key=f"chart_{i}"):
+                        with st.spinner(f"Fetching stock data for {row['ticker']}..."):
+                            # Fetch stock data
+                            stock_data = fin.fetch_stock_data(row['ticker'])
+                            
+                            if stock_data is not None:
+                                # Create and display chart
+                                fig = fin.plot_stock_data(stock_data, row['ticker'])
+                                st.pyplot(fig)
+                            else:
+                                st.warning(f"No stock data available for {row['ticker']}")
+                    
+                    # Generate market impact analysis
+                    if st.button(f"Analyze Market Impact", key=f"impact_{i}"):
+                        with st.spinner(f"Analyzing market impact for {row['ticker']}..."):
+                            # Fetch stock data
+                            stock_data = fin.fetch_stock_data(row['ticker'])
+                            
+                            if stock_data is not None:
+                                # Generate analysis
+                                analysis = fin.analyze_market_impact(row, stock_data, row['ticker'])
+                                st.markdown("### Market Impact Analysis")
+                                st.markdown(analysis)
+                            else:
+                                st.warning(f"No stock data available for {row['ticker']}")
+                else:
+                    st.markdown("No financial data available for this clinical trial's sponsor.")
+                    
+                    if 'sponsor' in row and row['sponsor'] != 'N/A':
+                        st.markdown(f"Sponsor: {row['sponsor']}")
+                        st.markdown("This sponsor was not matched to a publicly traded company in our database.")
+                    else:
+                        st.markdown("No sponsor information available for this trial.")
 
 def main():
     st.set_page_config(page_title="Clinical Trial Analyzer", page_icon="🧬", layout="wide")
@@ -496,6 +578,7 @@ def main():
         - ClinicalTrials.gov API to retrieve clinical trial data
         - Gemini AI to analyze trends and generate insights
         - Streamlit for the user interface
+        - yfinance for financial data analysis
         
         Note: Processing large numbers of trials may take time due to API rate limits.
         """)
@@ -538,21 +621,44 @@ def main():
                 
                 # Display a summary of processing results
                 st.subheader("Processing Summary")
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Total Studies Found", len(studies))
                 with col2:
                     st.metric("Search Term", search_term)
+                with col3:
+                    # Count studies with financial data
+                    financial_studies = sum(1 for study in studies if study.get('has_financial_data', False))
+                    st.metric("Studies with Financial Data", financial_studies)
                 
                 # Display results table
                 st.subheader("Extracted Information")
                 
-                # Drop fields not needed for display
+                # Add financial data columns if present
                 display_cols = ['nct_id', 'brief_title', 'phase', 'enrollment', 
                                'conditions', 'interventions', 'sponsor', 
                                'primary_outcome']
+                
+                # Add financial columns if they exist
+                if 'ticker' in df.columns:
+                    display_cols.append('ticker')
+                
+                # Create display dataframe
                 display_df = df[display_cols]
                 
+                # Add option to show/hide financial data
+                show_financial = st.checkbox("Show Financial Impact", value=True)
+                
+                if show_financial:
+                    # Create a filtered view with only financially analyzable trials
+                    if 'has_financial_data' in df.columns:
+                        financial_df = df[df['has_financial_data'] == True]
+                        if not financial_df.empty:
+                            st.subheader("Financial Impact Overview")
+                            st.dataframe(financial_df[display_cols], use_container_width=True)
+                
+                # Show all trials
+                st.subheader("All Clinical Trials")
                 st.dataframe(display_df, use_container_width=True)
                 
                 # Display detailed results for each file
@@ -561,8 +667,31 @@ def main():
                 # Download buttons for CSV
                 st.subheader("Download Options")
                 
+                # Prepare financial metrics for export
+                export_df = display_df.copy()
+                
+                # Add financial metrics if they exist
+                if 'has_financial_data' in df.columns and 'market_metrics' in df.columns:
+                    # Extract financial metrics into separate columns
+                    financial_rows = df[df['has_financial_data'] == True]
+                    
+                    # Initialize new columns
+                    export_df['price_change_pct'] = None
+                    export_df['avg_daily_return'] = None
+                    export_df['volatility'] = None
+                    export_df['volume_change_pct'] = None
+                    
+                    # Update values for rows with financial data
+                    for idx, row in financial_rows.iterrows():
+                        if 'market_metrics' in row and row['market_metrics'] is not None:
+                            metrics = row['market_metrics']
+                            export_df.loc[idx, 'price_change_pct'] = metrics.get('price_change_pct')
+                            export_df.loc[idx, 'avg_daily_return'] = metrics.get('avg_daily_return')
+                            export_df.loc[idx, 'volatility'] = metrics.get('volatility')
+                            export_df.loc[idx, 'volume_change_pct'] = metrics.get('volume_change_pct')
+                
                 # Download button for CSV
-                csv = display_df.to_csv(index=False)
+                csv = export_df.to_csv(index=False)
                 st.download_button(
                     label="Download Results as CSV",
                     data=csv,
@@ -578,6 +707,50 @@ def main():
                     file_name=f"clinical_trial_insights_{search_term}_{len(studies)}.txt",
                     mime="text/plain",
                 )
+                
+                # Add watchlist functionality
+                st.subheader("Watchlist")
+                
+                # Check if watchlist exists in session state, initialize if not
+                if 'watchlist' not in st.session_state:
+                    st.session_state.watchlist = {}
+                
+                # Get all companies with tickers
+                companies_with_tickers = [(study['sponsor'], study['ticker']) 
+                                         for study in studies 
+                                         if study.get('has_financial_data', False)]
+                
+                # Remove duplicates by converting to a set and back to list
+                unique_companies = list(set(companies_with_tickers))
+                
+                # Create a selection widget for companies
+                if unique_companies:
+                    # Create selection box for companies
+                    company_options = [f"{company} ({ticker})" for company, ticker in unique_companies]
+                    selected_company = st.selectbox("Select company to add to watchlist:", 
+                                                   [""] + company_options)
+                    
+                    if selected_company and st.button("Add to Watchlist"):
+                        company_name, ticker = selected_company.split(" (")
+                        ticker = ticker.rstrip(")")
+                        
+                        # Add to watchlist
+                        st.session_state.watchlist[ticker] = company_name
+                        st.success(f"Added {company_name} ({ticker}) to watchlist")
+                
+                # Display current watchlist
+                if st.session_state.watchlist:
+                    st.markdown("### Current Watchlist")
+                    watchlist_df = pd.DataFrame({
+                        "Company": st.session_state.watchlist.values(),
+                        "Ticker": st.session_state.watchlist.keys()
+                    })
+                    st.dataframe(watchlist_df)
+                    
+                    # Option to clear watchlist
+                    if st.button("Clear Watchlist"):
+                        st.session_state.watchlist = {}
+                        st.success("Watchlist cleared")
             else:
                 st.error("No studies found. Please try a different search term.")
                 
