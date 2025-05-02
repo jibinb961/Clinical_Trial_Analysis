@@ -17,6 +17,35 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize session state
+if 'analyzed_data' not in st.session_state:
+    st.session_state.analyzed_data = False
+    
+if 'analysis_requested' not in st.session_state:
+    st.session_state.analysis_requested = False
+    
+if 'correlation_analysis' not in st.session_state:
+    st.session_state.correlation_analysis = ""
+    
+if 'current_ticker' not in st.session_state:
+    st.session_state.current_ticker = ""
+    
+if 'current_trials' not in st.session_state:
+    st.session_state.current_trials = []
+    
+if 'current_stock_data' not in st.session_state:
+    st.session_state.current_stock_data = None
+
+def clear_analysis():
+    """Clear the correlation analysis state"""
+    st.session_state.analyzed_data = False
+    st.session_state.analysis_requested = False
+    st.session_state.correlation_analysis = ""
+
+def request_analysis():
+    """Mark that analysis has been requested"""
+    st.session_state.analysis_requested = True
+
 def format_date(date_str):
     """
     Format date strings from the API into a more readable format.
@@ -199,6 +228,44 @@ def plot_stock_with_trials(stock_data, trials, ticker, start_date, end_date):
     plt.close(fig)
     return buf
 
+def perform_correlation_analysis():
+    """Generate the correlation analysis if requested"""
+    if st.session_state.analysis_requested and not st.session_state.analyzed_data:
+        # Get the stored data
+        ticker = st.session_state.current_ticker
+        trials = st.session_state.current_trials
+        stock_data = st.session_state.current_stock_data
+        start_date = st.session_state.start_date
+        end_date = st.session_state.end_date
+        
+        # Run the analysis
+        with st.spinner("Analyzing correlation between clinical trials and stock price movements..."):
+            try:
+                # Generate the correlation analysis
+                analysis = llm.generate_stock_correlation_analysis(
+                    ticker, 
+                    trials, 
+                    stock_data, 
+                    start_date, 
+                    end_date
+                )
+                
+                # Store the result
+                st.session_state.correlation_analysis = analysis
+                st.session_state.analyzed_data = True
+                st.session_state.analysis_requested = False
+                
+                # Force a rerun to display the results without losing state
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error generating analysis: {str(e)}")
+                st.session_state.correlation_analysis = f"Error generating analysis: {str(e)}"
+                st.session_state.analyzed_data = True
+                st.session_state.analysis_requested = False
+                
+                # Force a rerun here too to ensure consistent behavior
+                st.rerun()
+
 def main():
     """Main application function"""
     
@@ -218,6 +285,10 @@ def main():
     
     with col1:
         ticker = st.text_input("Stock Ticker Symbol", "PFE", help="Enter a pharmaceutical company ticker symbol (e.g., PFE for Pfizer)")
+        
+        # Reset correlation analysis if ticker changes
+        if ticker != st.session_state.current_ticker:
+            clear_analysis()
         
         # Add sorting options
         sort_options = {
@@ -272,10 +343,13 @@ def main():
         return
     
     # Analysis button
-    analyze_button = st.button("Analyze Sponsor Focus", use_container_width=True)
+    analyze_button = st.button("Analyze Sponsor Focus", use_container_width=True, key="analyze_btn")
     
     # Process when button is clicked
     if analyze_button:
+        # Reset analysis state for new search
+        clear_analysis()
+        
         # Convert ticker to sponsor name
         sponsor_name = data.map_ticker_to_sponsor(ticker)
         
@@ -298,15 +372,23 @@ def main():
                 st.warning(f"No clinical trials found for {sponsor_name} in the selected date range.")
                 return
                 
+            # Store data in session state for correlation analysis
+            st.session_state.current_ticker = ticker
+            st.session_state.current_trials = trials
+            st.session_state.start_date = start_date
+            st.session_state.end_date = end_date
+                
             # Show number of trials
             st.success(f"Found {len(trials)} clinical trials for {sponsor_name} between {start_date} and {end_date}")
-            
-            # Generate analysis with Gemini
-            analysis = llm.generate_sponsor_analysis(trials, sponsor_name)
             
             # Fetch stock data
             with st.spinner(f"Fetching stock data for {ticker}..."):
                 stock_data = get_stock_data(ticker, start_date, end_date)
+                # Store stock data in session state
+                st.session_state.current_stock_data = stock_data
+            
+            # Generate analysis with Gemini
+            analysis = llm.generate_sponsor_analysis(trials, sponsor_name)
             
             # Display analysis and trial data
             st.markdown("## Research Focus Analysis")
@@ -440,6 +522,41 @@ def main():
                         important company announcements that may affect stock price.
                         """)
                         
+                        # Add AI analysis button - use a form to prevent page resets
+                        st.markdown("---")
+                        
+                        # Only show the analysis button if we have both valid stock data and trials with start dates
+                        trials_with_dates = [t for t in trials if t.get('start_date')]
+                        
+                        if trials_with_dates:
+                            # If analysis is complete, show results first
+                            if st.session_state.analyzed_data:
+                                st.markdown("### AI-Generated Stock Price Correlation Analysis")
+                                st.markdown(st.session_state.correlation_analysis)
+                                
+                                # Add citation
+                                st.markdown("---")
+                                st.caption("Analysis generated by Google Gemini AI based on stock price data and clinical trial events")
+                                
+                                # Add a button to regenerate the analysis
+                                if st.button("Regenerate Analysis", key="regenerate_btn", use_container_width=True):
+                                    clear_analysis()
+                                    st.session_state.analysis_requested = True
+                            elif not st.session_state.analysis_requested:
+                                # Create a button to request analysis
+                                st.button(
+                                    "Generate AI Correlation Analysis", 
+                                    on_click=request_analysis,
+                                    key="request_analysis_btn",
+                                    use_container_width=True,
+                                    help="Use AI to analyze the correlation between clinical trial start dates and stock price movements"
+                                )
+                            else:
+                                # If analysis is in progress, just show a message
+                                st.info("Analysis in progress... Please wait.")
+                        else:
+                            st.info("Correlation analysis is not available because no trials in the selected set have start dates that overlap with the stock data period.")
+                        
                         # Show stock data table
                         with st.expander("View Stock Price Data"):
                             # For MultiIndex DataFrames, simplify the display
@@ -477,6 +594,10 @@ def main():
                 else:
                     st.warning(f"No stock data available for {ticker} in the selected date range.")
                     st.info("This could be due to an invalid ticker symbol or the selected date range falling on non-trading days.")
+
+    # Check if we need to run analysis (outside of button click)
+    if st.session_state.analysis_requested and not st.session_state.analyzed_data:
+        perform_correlation_analysis()
 
 # Add explanatory info in sidebar
 st.sidebar.title("About this Tool")
