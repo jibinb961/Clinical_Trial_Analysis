@@ -1,6 +1,6 @@
-# Clinical Trial Focus Analyzer
+# Clinical Trial Stock Correlation Analyzer
 
-A tool to analyze pharmaceutical companies' clinical trial data, stock price correlations, and generate insights about their research focus using AI.
+A comprehensive tool to analyze pharmaceutical companies' clinical trial data, stock price correlations, and generate AI-powered insights about research focus and market impact.
 
 ## Overview
 
@@ -12,22 +12,43 @@ This application allows users to:
 5. Visualize stock price movements in relation to clinical trial events
 6. Generate AI-powered analysis of the correlation between trial events and stock performance
 
-## Features
+## Key Features
 
-- **Ticker to Sponsor Mapping**: Converts stock ticker symbols to company names
-- **Clinical Trial Retrieval**: Fetches trial data from ClinicalTrials.gov API
-- **AI Analysis**: Uses Google Gemini to analyze and summarize research trends
-- **Data Visualization**: Displays trial data in tabular format
-- **Stock Price Analysis**: Shows stock prices with clinical trial events marked
-- **Correlation Analysis**: Analyzes the relationship between trial events and stock movements
-- **Data Export**: Download clinical trial and stock data as CSV
+- **Clinical Trial Analysis**: 
+  - Fetches trial data from ClinicalTrials.gov API v2
+  - Maps stock tickers to pharmaceutical company names
+  - AI-powered analysis of research focus areas and pipeline
+  - Handles various date formats and structures from the API
+
+- **Stock Price Correlation**:
+  - Visualizes stock prices with clinical trial events marked
+  - Uses a 15-day window before and after trial start dates to analyze market impact
+  - AI-generated correlation analysis between trial announcements and stock movements
+  - Identifies trials with significant market impact
+
+- **Data Visualization & Export**:
+  - Interactive stock price charts with trial events marked
+  - Tabular trial data with sorting options
+  - Timeline view of ongoing clinical trials
+  - Export functionality for both trial and stock data
 
 ## Project Structure
 
-- `simplified_app.py`: Main Streamlit application
+- `simplified_app.py`: Main Streamlit application with UI and visualization logic
 - `data_module.py`: Functions for ticker mapping and clinical trial data retrieval
-- `llm_module.py`: Functions for interacting with Google Gemini API
+- `llm_module.py`: Integration with Google Gemini AI for analysis generation
 - `ticker_to_sponsor.json`: Mapping of stock tickers to company names
+- `example.env`: Template for setting up the environment variables
+
+## Technical Improvements
+
+- **Robust Date Handling**: Properly processes various date formats (year, year-month, full dates)
+- **Enhanced State Management**: Prevents UI resets during analysis generation
+- **Error Handling**: Comprehensive error handling for API calls and data processing
+- **Performance Optimization**: 
+  - Efficient data fetching with pagination support
+  - Client-side filtering for faster results
+  - Streamlined UI with optimized state updates
 
 ## Requirements
 
@@ -68,27 +89,31 @@ This application allows users to:
 1. Enter a pharmaceutical company ticker (e.g., "PFE" for Pfizer)
 2. Select start and end dates to filter trials
 3. Click "Analyze Sponsor Focus"
-4. View the AI-generated analysis and raw trial data
-5. Go to the "Stock Price Analysis" tab to see stock movements with trial events
-6. Click "Generate AI Correlation Analysis" to get insights on trial-stock correlations
+4. View the AI-generated analysis and detailed trial data in the tabs
+5. Scroll down to the Stock Price Analysis section
+6. Click "Generate Stock-Trial Correlation Analysis" to get AI insights on the correlation between trial announcements and stock movements
 
-## Example
+## Example Use Cases
 
-Try with ticker "LLY" (Eli Lilly) with date range 2020-2024 to see an analysis of their recent clinical research focus and the correlation with their stock performance.
+- **Investment Research**: Analyze how clinical trial announcements impact stock performance
+- **Pharmaceutical Industry Analysis**: Identify research trends and focus areas of companies
+- **Competitor Analysis**: Compare trial portfolios and market reactions across companies
+- **Market Impact Assessment**: Measure the impact of different trial types and phases on stock prices
 
 ## Troubleshooting
 
 - **API Key Issues**: If you see errors about the Gemini API key, make sure it's correctly set in your `.env` file
 - **Missing Data**: Some tickers may not have sufficient clinical trial data in the selected range
-- **Screen Resets**: If the app resets when generating analysis, try a shorter date range with fewer trials
+- **Date Ranges**: For optimal performance, use a date range of 2-3 years when analyzing larger companies
 
 ## Limitations
 
-- Limited to publicly available clinical trial data
-- Analysis quality depends on the available trial information
+- Limited to publicly available clinical trial data from ClinicalTrials.gov
+- Analysis quality depends on the completeness of trial information
 - Some ticker symbols may not be mapped to sponsor names
-- Stock correlation analysis is for educational purposes only
+- Stock correlation analysis uses a 15-day window which may not capture longer-term effects
+- Stock price movements are influenced by many factors beyond clinical trials
 
 ## Disclaimer
 
-This tool provides research insights for informational purposes only. It should not be used for investment decisions or medical advice. 
+This tool provides research insights for informational purposes only. It should not be used for investment decisions or medical advice. The stock correlation analysis does not constitute financial advice or recommendations. 

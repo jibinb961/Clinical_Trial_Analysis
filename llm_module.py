@@ -225,6 +225,9 @@ def generate_stock_correlation_analysis(ticker: str, trials: List[Dict], stock_d
         
         print(f"Using price column: {price_column}")
         
+        # Define the window size for price comparison (increased from 5 to 15 days)
+        window_days = 15
+        
         # Create a summary of trial start dates and nearby stock prices
         trial_price_data = []
         for trial in trials:
@@ -245,17 +248,17 @@ def generate_stock_correlation_analysis(ticker: str, trials: List[Dict], stock_d
                             if isinstance(price_on_date, pd.Series):
                                 price_on_date = price_on_date.iloc[0]
                                 
-                            # Get price 5 days before if available
+                            # Get price 15 days before if available
                             price_before = None
-                            if idx >= 5:
-                                price_before = stock_data.iloc[idx-5][price_column]
+                            if idx >= window_days:
+                                price_before = stock_data.iloc[idx-window_days][price_column]
                                 if isinstance(price_before, pd.Series):
                                     price_before = price_before.iloc[0]
                             
-                            # Get price 5 days after if available
+                            # Get price 15 days after if available
                             price_after = None
-                            if idx + 5 < len(stock_data):
-                                price_after = stock_data.iloc[idx+5][price_column]
+                            if idx + window_days < len(stock_data):
+                                price_after = stock_data.iloc[idx+window_days][price_column]
                                 if isinstance(price_after, pd.Series):
                                     price_after = price_after.iloc[0]
                             
@@ -273,8 +276,8 @@ def generate_stock_correlation_analysis(ticker: str, trials: List[Dict], stock_d
                                 "title": trial.get('brief_title'),
                                 "start_date": start_date_str,
                                 "price_on_date": price_on_date,
-                                "price_5d_before": price_before,
-                                "price_5d_after": price_after,
+                                "price_15d_before": price_before,
+                                "price_15d_after": price_after,
                                 "pct_change_before": before_change,
                                 "pct_change_after": after_change
                             })
@@ -292,10 +295,10 @@ def generate_stock_correlation_analysis(ticker: str, trials: List[Dict], stock_d
             f"Title: {data.get('title', 'N/A')}\n"
             f"Start Date: {data.get('start_date', 'N/A')}\n"
             f"Price on Start Date: ${format_price(data.get('price_on_date'))}\n"
-            f"Price 5 Days Before: ${format_price(data.get('price_5d_before'))}\n"
-            f"Price 5 Days After: ${format_price(data.get('price_5d_after'))}\n"
-            f"% Change 5 Days Before: {format_percent(data.get('pct_change_before'))}\n"
-            f"% Change 5 Days After: {format_percent(data.get('pct_change_after'))}"
+            f"Price 15 Days Before: ${format_price(data.get('price_15d_before'))}\n"
+            f"Price 15 Days After: ${format_price(data.get('price_15d_after'))}\n"
+            f"% Change 15 Days Before: {format_percent(data.get('pct_change_before'))}\n"
+            f"% Change 15 Days After: {format_percent(data.get('pct_change_after'))}"
             for data in trial_price_data
         ])
         
@@ -324,7 +327,7 @@ def generate_stock_correlation_analysis(ticker: str, trials: List[Dict], stock_d
 
         In your analysis, please include:
         1. Assessment of whether there appears to be a correlation between trial start dates and stock price movements
-        2. Identification of any trials that coincided with significant price changes
+        2. Identification of any trials that coincided with significant price changes (looking at the 15-day window before and after)
         3. Analysis of whether stock prices generally increase, decrease, or remain stable after trial start announcements
         4. Overall interpretation of how this company's clinical trial pipeline appears to influence its stock performance
         5. Potential factors beyond clinical trials that might be affecting the stock price during this period

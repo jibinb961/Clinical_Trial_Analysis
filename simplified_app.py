@@ -116,10 +116,12 @@ def get_stock_data(ticker, start_date, end_date):
         Pandas DataFrame with stock price data
     """
     try:
-        # Add a 30-day buffer before the start date to show pre-period trend
-        buffer_start = start_date - datetime.timedelta(days=30)
-        # Add a 5-day buffer after the end date for better visualization
-        buffer_end = end_date + datetime.timedelta(days=5)
+        # Add a 45-day buffer before the start date to show pre-period trend and allow for 15-day analysis
+        buffer_start = start_date - datetime.timedelta(days=45)
+        # Add a 20-day buffer after the end date for better visualization and 15-day analysis
+        buffer_end = end_date + datetime.timedelta(days=20)
+        
+        print(f"Fetching stock data for {ticker} from {buffer_start} to {buffer_end}")
         
         # Set auto_adjust=False to get the Adj Close column
         stock_data = yf.download(ticker, start=buffer_start, end=buffer_end, auto_adjust=False, progress=False)
@@ -496,6 +498,9 @@ def main():
                 Each red line represents the exact date when a clinical trial officially started, which can 
                 be a significant event in the company's R&D pipeline. These start dates often coincide with 
                 important company announcements that may affect stock price.
+                
+                The correlation analysis examines stock price movement in a 15-day window before and after 
+                each trial's start date to identify potential impacts of trial announcements on stock performance.
                 """)
             
             # Only show the analysis button if we have both valid stock data and trials with start dates
