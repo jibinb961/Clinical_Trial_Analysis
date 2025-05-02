@@ -41,6 +41,8 @@ def clear_analysis():
     st.session_state.analyzed_data = False
     st.session_state.analysis_requested = False
     st.session_state.correlation_analysis = ""
+    # Add a debug message to console
+    print("Analysis state cleared")
 
 def request_analysis():
     """Mark that analysis has been requested"""
@@ -228,44 +230,6 @@ def plot_stock_with_trials(stock_data, trials, ticker, start_date, end_date):
     plt.close(fig)
     return buf
 
-def perform_correlation_analysis():
-    """Generate the correlation analysis if requested"""
-    if st.session_state.analysis_requested and not st.session_state.analyzed_data:
-        # Get the stored data
-        ticker = st.session_state.current_ticker
-        trials = st.session_state.current_trials
-        stock_data = st.session_state.current_stock_data
-        start_date = st.session_state.start_date
-        end_date = st.session_state.end_date
-        
-        # Run the analysis
-        with st.spinner("Analyzing correlation between clinical trials and stock price movements..."):
-            try:
-                # Generate the correlation analysis
-                analysis = llm.generate_stock_correlation_analysis(
-                    ticker, 
-                    trials, 
-                    stock_data, 
-                    start_date, 
-                    end_date
-                )
-                
-                # Store the result
-                st.session_state.correlation_analysis = analysis
-                st.session_state.analyzed_data = True
-                st.session_state.analysis_requested = False
-                
-                # Force a rerun to display the results without losing state
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error generating analysis: {str(e)}")
-                st.session_state.correlation_analysis = f"Error generating analysis: {str(e)}"
-                st.session_state.analyzed_data = True
-                st.session_state.analysis_requested = False
-                
-                # Force a rerun here too to ensure consistent behavior
-                st.rerun()
-
 def main():
     """Main application function"""
     
@@ -394,7 +358,7 @@ def main():
             st.markdown("## Research Focus Analysis")
             
             # Create tabs for analysis and raw data
-            tab1, tab2, tab3, tab4 = st.tabs(["AI-Generated Analysis", "Trial Data", "Timeline View", "Stock Price Analysis"])
+            tab1, tab2, tab3 = st.tabs(["AI-Generated Analysis", "Trial Data", "Timeline View"])
             
             with tab1:
                 st.markdown(analysis)
@@ -495,109 +459,145 @@ def main():
                         st.info("No timeline data available for these trials.")
                 else:
                     st.info("Timeline view requires trials with start dates.")
+    
+    # Separate Stock Analysis Section
+    # Only show this if we have data to work with
+    if st.session_state.current_stock_data is not None and st.session_state.current_trials:
+        st.markdown("---")
+        st.markdown("## Stock Price Analysis")
+        
+        # Get data from session state
+        ticker = st.session_state.current_ticker
+        trials = st.session_state.current_trials
+        stock_data = st.session_state.current_stock_data
+        start_date = st.session_state.start_date
+        end_date = st.session_state.end_date
+        
+        st.subheader(f"Stock Price Analysis for {ticker}")
+        
+        # Create plot
+        plot_buf = plot_stock_with_trials(stock_data, trials, ticker, start_date, end_date)
+        
+        if plot_buf:
+            # Display the plot
+            st.image(plot_buf, use_column_width=True)
             
-            with tab4:
-                st.subheader(f"Stock Price Analysis for {ticker}")
+            # Add explanation of the visualization
+            with st.expander("Visualization Details"):
+                st.markdown("""
+                ### Visualization Details:
+                - **Blue Line:** Stock price (Adjusted Close or Close)
+                - **Red Vertical Lines:** Clinical trial start dates (when a trial officially began)
+                - **Green Vertical Lines:** Analysis period boundaries
+                - **Red Dots:** Stock price value on each trial start date
+                - **Number Labels:** Trial identifiers (NCT ID numbers)
                 
-                if stock_data is not None and not stock_data.empty:
-                    # Create plot
-                    plot_buf = plot_stock_with_trials(stock_data, trials, ticker, start_date, end_date)
+                The visualization shows how clinical trial events correlate with stock price movements.
+                Each red line represents the exact date when a clinical trial officially started, which can 
+                be a significant event in the company's R&D pipeline. These start dates often coincide with 
+                important company announcements that may affect stock price.
+                """)
+            
+            # Only show the analysis button if we have both valid stock data and trials with start dates
+            trials_with_dates = [t for t in trials if t.get('start_date')]
+            
+            if trials_with_dates:
+                # Create two columns for action buttons
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    if not st.session_state.analyzed_data and not st.session_state.analysis_requested:
+                        # Show analysis request button
+                        run_analysis = st.button(
+                            "Generate Stock-Trial Correlation Analysis", 
+                            use_container_width=True,
+                            key="stock_analysis_btn"
+                        )
+                        
+                        if run_analysis:
+                            # Run the analysis directly here instead of using callbacks
+                            with st.spinner("Analyzing correlation between clinical trials and stock price movements..."):
+                                try:
+                                    # Generate the correlation analysis
+                                    analysis = llm.generate_stock_correlation_analysis(
+                                        ticker, 
+                                        trials, 
+                                        stock_data, 
+                                        start_date, 
+                                        end_date
+                                    )
+                                    
+                                    # Store the result
+                                    st.session_state.correlation_analysis = analysis
+                                    st.session_state.analyzed_data = True
+                                    st.session_state.analysis_requested = False
+                                    
+                                    # Force rerun to update the UI
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error generating analysis: {str(e)}")
                     
-                    if plot_buf:
-                        # Display the plot
-                        st.image(plot_buf, use_column_width=True)
-                        
-                        # Add explanation of the visualization
-                        st.markdown("""
-                        ### Visualization Details:
-                        - **Blue Line:** Stock price (Adjusted Close or Close)
-                        - **Red Vertical Lines:** Clinical trial start dates (when a trial officially began)
-                        - **Green Vertical Lines:** Analysis period boundaries
-                        - **Red Dots:** Stock price value on each trial start date
-                        - **Number Labels:** Trial identifiers (NCT ID numbers)
-                        
-                        The visualization shows how clinical trial events correlate with stock price movements.
-                        Each red line represents the exact date when a clinical trial officially started, which can 
-                        be a significant event in the company's R&D pipeline. These start dates often coincide with 
-                        important company announcements that may affect stock price.
-                        """)
-                        
-                        # Add AI analysis button - use a form to prevent page resets
-                        st.markdown("---")
-                        
-                        # Only show the analysis button if we have both valid stock data and trials with start dates
-                        trials_with_dates = [t for t in trials if t.get('start_date')]
-                        
-                        if trials_with_dates:
-                            # If analysis is complete, show results first
-                            if st.session_state.analyzed_data:
-                                st.markdown("### AI-Generated Stock Price Correlation Analysis")
-                                st.markdown(st.session_state.correlation_analysis)
-                                
-                                # Add citation
-                                st.markdown("---")
-                                st.caption("Analysis generated by Google Gemini AI based on stock price data and clinical trial events")
-                                
-                                # Add a button to regenerate the analysis
-                                if st.button("Regenerate Analysis", key="regenerate_btn", use_container_width=True):
-                                    clear_analysis()
-                                    st.session_state.analysis_requested = True
-                            elif not st.session_state.analysis_requested:
-                                # Create a button to request analysis
-                                st.button(
-                                    "Generate AI Correlation Analysis", 
-                                    on_click=request_analysis,
-                                    key="request_analysis_btn",
-                                    use_container_width=True,
-                                    help="Use AI to analyze the correlation between clinical trial start dates and stock price movements"
-                                )
-                            else:
-                                # If analysis is in progress, just show a message
-                                st.info("Analysis in progress... Please wait.")
+                with col2:
+                    # Show stock data in expander
+                    with st.expander("View Stock Data"):
+                        # For MultiIndex DataFrames, simplify the display
+                        if isinstance(stock_data.columns, pd.MultiIndex):
+                            # Create a simpler view with just the key columns for the selected ticker
+                            display_df = pd.DataFrame({
+                                'Open': stock_data[('Open', ticker)],
+                                'High': stock_data[('High', ticker)],
+                                'Low': stock_data[('Low', ticker)],
+                                'Close': stock_data[('Close', ticker)],
+                                'Volume': stock_data[('Volume', ticker)]
+                            })
+                            if ('Adj Close', ticker) in stock_data.columns:
+                                display_df['Adj Close'] = stock_data[('Adj Close', ticker)]
+                            
+                            st.dataframe(display_df, use_container_width=True)
                         else:
-                            st.info("Correlation analysis is not available because no trials in the selected set have start dates that overlap with the stock data period.")
-                        
-                        # Show stock data table
-                        with st.expander("View Stock Price Data"):
-                            # For MultiIndex DataFrames, simplify the display
-                            if isinstance(stock_data.columns, pd.MultiIndex):
-                                # Create a simpler view with just the key columns for the selected ticker
-                                display_df = pd.DataFrame({
-                                    'Open': stock_data[('Open', ticker)],
-                                    'High': stock_data[('High', ticker)],
-                                    'Low': stock_data[('Low', ticker)],
-                                    'Close': stock_data[('Close', ticker)],
-                                    'Volume': stock_data[('Volume', ticker)]
-                                })
-                                if ('Adj Close', ticker) in stock_data.columns:
-                                    display_df['Adj Close'] = stock_data[('Adj Close', ticker)]
+                            # Regular dataframe display
+                            st.dataframe(stock_data, use_container_width=True)
+                
+                # If analysis is complete, show results
+                if st.session_state.analyzed_data:
+                    st.markdown("### AI-Generated Stock Price Correlation Analysis")
+                    
+                    # Create a container for the analysis text
+                    analysis_container = st.container()
+                    with analysis_container:
+                        st.markdown(st.session_state.correlation_analysis)
+                    
+                    # Add citation
+                    st.markdown("---")
+                    st.caption("Analysis generated by Google Gemini AI based on stock price data and clinical trial events")
+                    
+                    # Add a button to regenerate the analysis
+                    if st.button("Regenerate Analysis", key="regenerate_btn"):
+                        clear_analysis()
+                        # Rather than setting a flag, let's run the analysis directly
+                        with st.spinner("Generating new analysis..."):
+                            try:
+                                # Generate the correlation analysis
+                                analysis = llm.generate_stock_correlation_analysis(
+                                    ticker, 
+                                    trials, 
+                                    stock_data, 
+                                    start_date, 
+                                    end_date
+                                )
                                 
-                                st.dataframe(display_df, use_container_width=True)
+                                # Store the result
+                                st.session_state.correlation_analysis = analysis
+                                st.session_state.analyzed_data = True
                                 
-                                # Download option for simplified data
-                                csv = display_df.to_csv()
-                            else:
-                                # Regular dataframe display
-                                st.dataframe(stock_data, use_container_width=True)
-                                
-                                # Download option for original data
-                                csv = stock_data.to_csv()
-                                
-                            st.download_button(
-                                label="Download Stock Data as CSV",
-                                data=csv,
-                                file_name=f"{ticker}_stock_data_{start_date}_to_{end_date}.csv",
-                                mime="text/csv",
-                            )
-                    else:
-                        st.error("Error generating the stock price visualization.")
-                else:
-                    st.warning(f"No stock data available for {ticker} in the selected date range.")
-                    st.info("This could be due to an invalid ticker symbol or the selected date range falling on non-trading days.")
-
-    # Check if we need to run analysis (outside of button click)
-    if st.session_state.analysis_requested and not st.session_state.analyzed_data:
-        perform_correlation_analysis()
+                                # Rerun to update UI
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error generating analysis: {str(e)}")
+            else:
+                st.info("Correlation analysis is not available because no trials in the selected set have start dates that overlap with the stock data period.")
+        else:
+            st.error("Error generating the stock price visualization.")
 
 # Add explanatory info in sidebar
 st.sidebar.title("About this Tool")
