@@ -259,6 +259,36 @@ def is_date_before(date_str: str, compare_to: str) -> bool:
         # If we can't parse the date, assume it's not before
         return False
 
+def is_date_equal(date_str: str, compare_to: str) -> bool:
+    """
+    Check if a date string is equal to another date string.
+    Handles various ISO 8601 formats.
+    
+    Args:
+        date_str: Date string from API
+        compare_to: Date string to compare to (yyyy-MM-dd)
+        
+    Returns:
+        True if date_str is equal to compare_to
+    """
+    try:
+        # Handle partial dates
+        if len(date_str) == 4:  # yyyy
+            date_year = int(date_str)
+            compare_year = int(compare_to[:4])
+            return date_year == compare_year
+        elif len(date_str) == 7:  # yyyy-MM
+            date_year, date_month = map(int, date_str.split('-'))
+            compare_year, compare_month = map(int, compare_to[:7].split('-'))
+            return date_year == compare_year and date_month == compare_month
+        else:  # yyyy-MM-dd or longer
+            date_obj = datetime.datetime.strptime(date_str[:10], '%Y-%m-%d')
+            compare_obj = datetime.datetime.strptime(compare_to[:10], '%Y-%m-%d')
+            return date_obj.date() == compare_obj.date()
+    except Exception:
+        # If we can't parse the date, assume it's not equal
+        return False
+
 def extract_summary_data(study: Dict) -> Dict:
     """
     Extract key information from a clinical trial study.
@@ -352,9 +382,32 @@ def process_trials_for_analysis(sponsor_name: str, start_date: datetime.date, en
     # Extract summary data from each trial
     processed_trials = []
     
+    # Format date strings for comparison
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = end_date.strftime("%Y-%m-%d")
+    
     for study in raw_trials:
         trial_data = extract_summary_data(study)
+        
+        # Additional filtering to ensure start date is within range
+        # This is needed because the current API filtering is too permissive
+        trial_start_date = trial_data.get('start_date')
+        
+        # Only include trials with start dates within our range
+        if trial_start_date:
+            # Check if start date is on or after our start date
+            if is_date_before(trial_start_date, start_date_str) and not is_date_equal(trial_start_date, start_date_str):
+                print(f"Skipping trial {trial_data.get('nct_id')} with start date {trial_start_date} before filter start {start_date_str}")
+                continue
+                
+            # Check if start date is on or before our end date
+            if is_date_after(trial_start_date, end_date_str) and not is_date_equal(trial_start_date, end_date_str):
+                print(f"Skipping trial {trial_data.get('nct_id')} with start date {trial_start_date} after filter end {end_date_str}")
+                continue
+        
         processed_trials.append(trial_data)
+    
+    print(f"After additional date filtering: {len(processed_trials)} trials remaining")
     
     # Define sorting function
     def get_sort_key(trial, field):
