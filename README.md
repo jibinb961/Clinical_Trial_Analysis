@@ -1,100 +1,72 @@
-# Clinical Trial Analyzer
+# Clinical Trial Focus Analyzer
 
-A Streamlit application that retrieves and analyzes clinical trials from ClinicalTrials.gov, with AI-powered insights generation using Gemini AI. The app now includes financial analysis of biotech companies sponsoring the trials.
+A simplified tool to analyze pharmaceutical companies' clinical trial data and generate insights about their research focus using AI.
+
+## Overview
+
+This application allows users to:
+1. Enter a stock ticker for a pharmaceutical company
+2. Select a date range to filter clinical trials
+3. Retrieve clinical trials from ClinicalTrials.gov
+4. Generate an AI-powered analysis of the company's research focus using Google Gemini
 
 ## Features
 
-### Core Features
-- Search for clinical trials by keyword
-- Retrieve details for multiple studies (up to 1,000)
-- Extract key information from each trial:
-  - NCT ID
-  - Title
-  - Phase
-  - Enrollment count
-  - Conditions
-  - Interventions
-  - Sponsor
-  - Primary outcome
-  - Brief summary
-- Generate AI analysis of trial trends
-- Download results as CSV
+- **Ticker to Sponsor Mapping**: Converts stock ticker symbols to company names
+- **Clinical Trial Retrieval**: Fetches trial data from ClinicalTrials.gov API
+- **AI Analysis**: Uses Google Gemini to analyze and summarize research trends
+- **Data Visualization**: Displays trial data in tabular format
+- **Data Export**: Download clinical trial data as CSV
 
-### Financial Analysis Features
-- Map trial sponsors to public biotech companies and their stock tickers
-- Display stock performance metrics:
-  - 90-day price and volume data 
-  - Moving averages (7-day, 30-day)
-  - Daily returns
-- Generate AI analysis of potential market impact
-- Visual stock charts with trial event markers
-- Watchlist functionality for recurring sponsors
-- Export financial metrics alongside trial data
+## Project Structure
 
-## Installation
+- `simplified_app.py`: Main Streamlit application
+- `data_module.py`: Functions for ticker mapping and clinical trial data retrieval
+- `llm_module.py`: Functions for interacting with Google Gemini API
+- `ticker_to_sponsor.json`: Mapping of stock tickers to company names
+
+## Requirements
+
+- Python 3.8+
+- Streamlit
+- Pandas
+- Google GenerativeAI Python SDK
+- python-dotenv
+- requests
+
+## Setup
 
 1. Clone this repository
-2. Create a virtual environment:
+2. Install dependencies:
    ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install streamlit pandas google-generativeai python-dotenv requests
    ```
-3. Install required packages:
-   ```
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file with your Gemini API key:
+3. Create a `.env` file with your Gemini API key:
    ```
    GEMINI_API_KEY=your_api_key_here
+   ```
+4. Run the application:
+   ```
+   streamlit run simplified_app.py
    ```
 
 ## Usage
 
-1. Run the application:
-   ```
-   streamlit run app.py
-   ```
-2. Enter a search term (e.g., "diabetes", "cancer", "covid")
-3. Specify the number of studies to retrieve
-4. Click "Search and Analyze"
-5. Review the results, including:
-   - AI-generated insights
-   - Detailed trial information
-   - Financial analysis for public companies
-   - Stock performance metrics and charts
-6. Use the "Show Financial Impact" option to focus on trials from public companies
-7. Add companies to your watchlist for future reference
-8. Download the analysis as CSV
+1. Enter a pharmaceutical company ticker (e.g., "PFE" for Pfizer)
+2. Select start and end dates to filter trials
+3. Click "Analyze Sponsor Focus"
+4. View the AI-generated analysis and raw trial data
 
-## Technical Details
+## Example
 
-The application uses:
-- Streamlit for the user interface
-- ClinicalTrials.gov API for retrieving trial data
-- Google's Gemini AI for generating insights
-- yfinance for retrieving stock data
-- Matplotlib for generating stock charts
-- Pandas for data manipulation
-
-## Project Structure
-
-- `app.py`: Main application code
-- `finance_module.py`: Financial analysis functions
-- `company_name_to_ticker.json`: Mapping of company names to stock tickers
-- `requirements.txt`: Required Python packages
-- `.env`: Environment variables (not included in repository)
+Try with ticker "LLY" (Eli Lilly) with date range 2020-2024 to see an analysis of their recent clinical research focus.
 
 ## Limitations
 
-- The ClinicalTrials.gov API has a limit of retrieving 10,000 studies
-- Only a subset of biotech companies are mapped to stock tickers
-- Financial analysis is performed on-demand, which may cause slight delays
-- Stock data is retrieved from Yahoo Finance with standard limitations
+- Limited to publicly available clinical trial data
+- Analysis quality depends on the available trial information
+- Some ticker symbols may not be mapped to sponsor names
 
-## Contributing
+## Disclaimer
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This tool provides research insights for informational purposes only. It should not be used for investment decisions or medical advice. 

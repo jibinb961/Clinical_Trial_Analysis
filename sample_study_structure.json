@@ -1,0 +1,906 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT00582660",
+      "orgStudyIdInfo": {
+        "id": "F001228004"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "NQ8-00-02-008",
+          "type": "OTHER",
+          "domain": "Pfizer Tracking Number"
+        }
+      ],
+      "organization": {
+        "fullName": "University of Alabama at Birmingham",
+        "class": "OTHER"
+      },
+      "briefTitle": "Evaluation of Surgically Resected Colorectal Adenomas and Carcinomas After 7 Days Pretreatment With Celecoxib",
+      "officialTitle": "Randomized, Placebo-Controlled, Phase 2B Evaluation of Cyclooxygenase-2 Activity in Surgically Resected Primary Colorectal Adenomas and Carcinomas After 7 Days Pretreatment With Celecoxib",
+      "acronym": "UAB0040"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2017-05",
+      "overallStatus": "COMPLETED",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2001-12"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2008-06",
+        "type": "ACTUAL"
+      },
+      "completionDateStruct": {
+        "date": "2008-06",
+        "type": "ACTUAL"
+      },
+      "studyFirstSubmitDate": "2007-12-20",
+      "studyFirstSubmitQcDate": "2007-12-27",
+      "studyFirstPostDateStruct": {
+        "date": "2007-12-28",
+        "type": "ESTIMATED"
+      },
+      "resultsFirstSubmitDate": "2011-02-02",
+      "resultsFirstSubmitQcDate": "2014-07-15",
+      "resultsFirstPostDateStruct": {
+        "date": "2014-08-07",
+        "type": "ESTIMATED"
+      },
+      "lastUpdateSubmitDate": "2017-05-23",
+      "lastUpdatePostDateStruct": {
+        "date": "2017-06-15",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "PRINCIPAL_INVESTIGATOR",
+        "investigatorFullName": "Marty Heslin",
+        "investigatorTitle": "Principal Investigator",
+        "investigatorAffiliation": "University of Alabama at Birmingham"
+      },
+      "leadSponsor": {
+        "name": "University of Alabama at Birmingham",
+        "class": "OTHER"
+      },
+      "collaborators": [
+        {
+          "name": "Pfizer",
+          "class": "INDUSTRY"
+        },
+        {
+          "name": "Pharmacia",
+          "class": "INDUSTRY"
+        }
+      ]
+    },
+    "oversightModule": {
+      "oversightHasDmc": true
+    },
+    "descriptionModule": {
+      "briefSummary": "The purpose of this study is to assess how effective celecoxib is in limiting production of a hormone, prostaglandin, in the subject's body. It is felt that this hormone is involved in the evolution of pre-cancerous growths in the colon to cancerous stage or in the progression of an existing cancer. To answer this question, some subjects are given the new investigational drug, and other subjects a placebo. A placebo is a capsule that contains inactive ingredients. Only by comparing the response of two subject groups, one receiving placebo (inactive), and one receiving celecoxib (active), will we be able to know whether or not celecoxib actually works. The outcome we are assessing is the hormone activity before and after celecoxib is given.",
+      "detailedDescription": "We propose to test the hypothesis that celecoxib, a specific inhibitor of cyclooxygenase -2 (COX-2), will effectively inhibit the enzymatic activity in all tissues sampled after oral administration of celecoxib for 7 days preoperatively. One hundred twenty patients (120) undergoing standard surgical resection for the treatment of primary colorectal adenomas or carcinomas would be randomized to celecoxib or placebo given for 7 days prior to operation. Peripheral blood will be drawn prior to drug or placebo administration, and then morning of operation. At the time of definitive resection of the specimen, normal intestinal mucosa and primary tumor would be harvested and immediately snap frozen at -80 degrees. Levels of COX-2 activity (prostaglandin production) as well as expression of COX-2 and other markers (matrix metalloproteinases(MMPs), tissue inhibitors of MMPs (TIMPs), cell adhesion and cell cycle control molecules will be evaluated in normal mucosa and primary tumor compared between celecoxib and placebo treated patients."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Colorectal Adenoma",
+        "Colorectal Carcinoma"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "PHASE2"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "TRIPLE",
+          "whoMasked": [
+            "PARTICIPANT",
+            "CARE_PROVIDER",
+            "INVESTIGATOR"
+          ]
+        }
+      },
+      "enrollmentInfo": {
+        "count": 40,
+        "type": "ACTUAL"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "study drug BID for 7 days before surgery",
+          "type": "ACTIVE_COMPARATOR",
+          "description": "400 mg Celecoxib the study drug will be given for 7 days before surgery",
+          "interventionNames": [
+            "Drug: Celecoxib"
+          ]
+        },
+        {
+          "label": "Placebo for 7 days before surgery",
+          "type": "PLACEBO_COMPARATOR",
+          "description": "Placebo in a one to one randomization prior to surgery",
+          "interventionNames": [
+            "Drug: Placebo"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "Celecoxib",
+          "description": "400 mg twice a day for 7 days prior to surgery",
+          "armGroupLabels": [
+            "study drug BID for 7 days before surgery"
+          ],
+          "otherNames": [
+            "study drug"
+          ]
+        },
+        {
+          "type": "DRUG",
+          "name": "Placebo",
+          "description": "one tablet of placebo will be given for 7 days prior to surgery",
+          "armGroupLabels": [
+            "Placebo for 7 days before surgery"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Number of Subjects Witha Change (IMPROVEMENT) in Colo-rectal Adenocarcinoma as Measured by Cyclooxygenase-2 Activity After 7 Days of Celecoxib",
+          "description": "The Colo-Rectal adenocarcinoma will be measured by cyclooxygenase-2(COX-2) activity at 7 days post baseline. Cox-2 activity is measured by assessing tumors and normal tissue using \"Electron microscope and Tandem mass Spectrometry\" methodology though the UAB shared Mass Spectrometry facility. Improvement was measured by 2-fold increase in COX-2 activity from baseline. The methodology used was High Performance Liquid Chromatography(HPLC). additional studies include expression of genes thought to be important in colorectal carcinogenesis: COX-1 and 2, MMP, 2 7, and 9, tissue inhibitor of metalloproteinases(TIMPs) 1 ans 2 and beta-catenin.",
+          "timeFrame": "baseline to 7 days"
+        },
+        {
+          "measure": "Subjects With Positive Response 72 Hours After Administration of Study Treatment as Measured by Immunoblot",
+          "description": "At 72 hours after start of treatment, the number of subjects with immunoblot demonstrated a 1.5 to 2 fold increase in 15-LOX-1 protein expression in human colorectal adenocarcinoma cell line with epithelial morphology(HT-29) and dihydrolipoamide dehydrogenase(DLD)-1 cells.",
+          "timeFrame": "baseline to 72 hours"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion criteria:\n\n1. Mass suspicious for carcinoma, clinical diagnosis of adenocarcinoma of the colon (to be histologically confirmed upon study entry) or an adenoma that is not removable by endoscopy.\n2. Patient must be undergoing colo-rectal resection\n3. age \\> 18yrs\n4. Karnofsky performance status(KPS) \\> 60.\n5. Signed and dated informed consent.\n6. Complete history and physical examination within 30 days of study entry.\n7. Laboratory evaluations within 30 days of study entry to include: Complete Blood Count(CBC) with differential and platelets, Blood Urea Nitrogen(BUN), creatinine, bilirubin, serum glutamic-oxaloacetic transaminase (SGOT), serum glutamic-pyruvic transaminase(SGPT), lactate dehydrogenase(LDH), alkaline phosphatase, total protein, albumin and carcinoembryonic antigen(CEA).\n8. Chest x-ray within 30 days of study entry.\n9. The subject has no other serious medical illness, other than that treated by this study, which would limit the ability of the patient to receive protocol therapy, or psychiatric condition which would prevent informed consent.\n\nAbsolute exclusion criteria:\n\n1. severe infection ;White Blood Cell Count(WBC) \\> 2 times normal, fever, sepsis)\n2. immunosuppression (steroids, transplant patient)\n3. emergent operation(perforation, obstruction).\n4. Patients with serum bilirubin or creatinine levels greater than two times the normal upper limit would be excluded.\n5. Pregnant or lactating women or subjects of child bearing age who do not practice effective means of birth control\n6. Sulfonamide allergy\n7. Recurrent or previous history of known ischemic heart disease or thrombotic events as well as any angioplasty or cardiac by-pass procedures in the previous 12 months.\n\nRelative exclusion criteria:\n\n1. Medications taken by the patient that are listed in section 9.0 of this protocol would be reviewed by the enlisting physician prior to entry into the study. Warfarin, aspirin and methotrexate would be stopped prior to protocol entry as these are stopped prior to any surgery. The most common of the listed medications would be ACE inhibitors and furosemide. The dose, schedule and indications of the medications would be reviewed with the patient and a decision regarding entry into the study would be made by the enlisting physician. Other less common medications will be similarly reviewed, however most had little or no clinical side effects despite potential biochemical interactions.\n2. Medications known to be COX inhibitors would have to be stopped prior to entry into the study. This would include any aspirin,nonsteroidal antiinflammatory drugs(NSAID) (ibuprofen, naproxen, rofecoxib, celecoxib, Mobic, etc) or over the counter cold medication that might contain these substances. A list of common over-the-counter medications that might contain such substances will be reviewed with the patient and if there are any questions after the study has begun, instructions to call before taking any medications will be given.",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "19 Years",
+      "maximumAge": "90 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "overallOfficials": [
+        {
+          "name": "Martin J Heslin, M.D.",
+          "affiliation": "University of Alabama at Birmingham",
+          "role": "PRINCIPAL_INVESTIGATOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "University of Alabama at Birmingham",
+          "city": "Birmingham",
+          "state": "Alabama",
+          "zip": "35294",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 33.52066,
+            "lon": -86.80249
+          }
+        }
+      ]
+    }
+  },
+  "resultsSection": {
+    "participantFlowModule": {
+      "groups": [
+        {
+          "id": "FG000",
+          "title": "Celecoxib",
+          "description": "400 mg BID given for 7 days before surgery"
+        },
+        {
+          "id": "FG001",
+          "title": "Placebo",
+          "description": "1 tablet BID given for 7 days before surgery"
+        }
+      ],
+      "periods": [
+        {
+          "title": "Overall Study",
+          "milestones": [
+            {
+              "type": "STARTED",
+              "achievements": [
+                {
+                  "groupId": "FG000",
+                  "numSubjects": "20"
+                },
+                {
+                  "groupId": "FG001",
+                  "numSubjects": "20"
+                }
+              ]
+            },
+            {
+              "type": "COMPLETED",
+              "achievements": [
+                {
+                  "groupId": "FG000",
+                  "numSubjects": "20"
+                },
+                {
+                  "groupId": "FG001",
+                  "numSubjects": "20"
+                }
+              ]
+            },
+            {
+              "type": "NOT COMPLETED",
+              "achievements": [
+                {
+                  "groupId": "FG000",
+                  "numSubjects": "0"
+                },
+                {
+                  "groupId": "FG001",
+                  "numSubjects": "0"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "baselineCharacteristicsModule": {
+      "groups": [
+        {
+          "id": "BG000",
+          "title": "Celecoxib",
+          "description": "400 mg BID given for 7 days before surgery"
+        },
+        {
+          "id": "BG001",
+          "title": "Placebo",
+          "description": "1 tablet BID given for 7 days before surgery"
+        },
+        {
+          "id": "BG002",
+          "title": "Total",
+          "description": "Total of all reporting groups"
+        }
+      ],
+      "denoms": [
+        {
+          "units": "Participants",
+          "counts": [
+            {
+              "groupId": "BG000",
+              "value": "20"
+            },
+            {
+              "groupId": "BG001",
+              "value": "20"
+            },
+            {
+              "groupId": "BG002",
+              "value": "40"
+            }
+          ]
+        }
+      ],
+      "measures": [
+        {
+          "title": "Age, Categorical",
+          "paramType": "COUNT_OF_PARTICIPANTS",
+          "unitOfMeasure": "Participants",
+          "classes": [
+            {
+              "categories": [
+                {
+                  "title": "<=18 years",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "0"
+                    }
+                  ]
+                },
+                {
+                  "title": "Between 18 and 65 years",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "20"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "20"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "40"
+                    }
+                  ]
+                },
+                {
+                  "title": ">=65 years",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "0"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Age, Continuous",
+          "paramType": "MEAN",
+          "dispersionType": "STANDARD_DEVIATION",
+          "unitOfMeasure": "years",
+          "classes": [
+            {
+              "categories": [
+                {
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "62",
+                      "spread": "1"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "62",
+                      "spread": "1"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "62",
+                      "spread": "1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Sex: Female, Male",
+          "paramType": "COUNT_OF_PARTICIPANTS",
+          "unitOfMeasure": "Participants",
+          "classes": [
+            {
+              "categories": [
+                {
+                  "title": "Female",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "6"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "4"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "10"
+                    }
+                  ]
+                },
+                {
+                  "title": "Male",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "14"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "16"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "30"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Region of Enrollment",
+          "paramType": "NUMBER",
+          "unitOfMeasure": "participants",
+          "classes": [
+            {
+              "title": "United States",
+              "categories": [
+                {
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "20"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "20"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "40"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "outcomeMeasuresModule": {
+      "outcomeMeasures": [
+        {
+          "type": "PRIMARY",
+          "title": "Number of Subjects Witha Change (IMPROVEMENT) in Colo-rectal Adenocarcinoma as Measured by Cyclooxygenase-2 Activity After 7 Days of Celecoxib",
+          "description": "The Colo-Rectal adenocarcinoma will be measured by cyclooxygenase-2(COX-2) activity at 7 days post baseline. Cox-2 activity is measured by assessing tumors and normal tissue using \"Electron microscope and Tandem mass Spectrometry\" methodology though the UAB shared Mass Spectrometry facility. Improvement was measured by 2-fold increase in COX-2 activity from baseline. The methodology used was High Performance Liquid Chromatography(HPLC). additional studies include expression of genes thought to be important in colorectal carcinogenesis: COX-1 and 2, MMP, 2 7, and 9, tissue inhibitor of metalloproteinases(TIMPs) 1 ans 2 and beta-catenin.",
+          "reportingStatus": "POSTED",
+          "paramType": "NUMBER",
+          "unitOfMeasure": "Participant",
+          "timeFrame": "baseline to 7 days",
+          "groups": [
+            {
+              "id": "OG000",
+              "title": "Celecoxib",
+              "description": "400 mg BID given for 7 days before surgery"
+            },
+            {
+              "id": "OG001",
+              "title": "Placebo",
+              "description": "1 tablet BID given for 7 days before surgery"
+            }
+          ],
+          "denoms": [
+            {
+              "units": "Participants",
+              "counts": [
+                {
+                  "groupId": "OG000",
+                  "value": "20"
+                },
+                {
+                  "groupId": "OG001",
+                  "value": "20"
+                }
+              ]
+            }
+          ],
+          "classes": [
+            {
+              "categories": [
+                {
+                  "measurements": [
+                    {
+                      "groupId": "OG000",
+                      "value": "2.0"
+                    },
+                    {
+                      "groupId": "OG001",
+                      "value": "2.0"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "PRIMARY",
+          "title": "Subjects With Positive Response 72 Hours After Administration of Study Treatment as Measured by Immunoblot",
+          "description": "At 72 hours after start of treatment, the number of subjects with immunoblot demonstrated a 1.5 to 2 fold increase in 15-LOX-1 protein expression in human colorectal adenocarcinoma cell line with epithelial morphology(HT-29) and dihydrolipoamide dehydrogenase(DLD)-1 cells.",
+          "reportingStatus": "POSTED",
+          "paramType": "NUMBER",
+          "unitOfMeasure": "Participants",
+          "timeFrame": "baseline to 72 hours",
+          "groups": [
+            {
+              "id": "OG000",
+              "title": "Celecoxib",
+              "description": "400 mg BID given for 7 days before surgery"
+            },
+            {
+              "id": "OG001",
+              "title": "Placebo",
+              "description": "1 tablet BID given for 7 days before surgery"
+            }
+          ],
+          "denoms": [
+            {
+              "units": "Participants",
+              "counts": [
+                {
+                  "groupId": "OG000",
+                  "value": "20"
+                },
+                {
+                  "groupId": "OG001",
+                  "value": "20"
+                }
+              ]
+            }
+          ],
+          "classes": [
+            {
+              "categories": [
+                {
+                  "measurements": [
+                    {
+                      "groupId": "OG000",
+                      "value": "3.0",
+                      "spread": "0.5"
+                    },
+                    {
+                      "groupId": "OG001",
+                      "value": "0",
+                      "spread": "0.5"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "adverseEventsModule": {
+      "frequencyThreshold": "0",
+      "timeFrame": "From baseline visit to 36 months",
+      "eventGroups": [
+        {
+          "id": "EG000",
+          "title": "Celecoxib",
+          "description": "400 mg BID given for 7 days before surgery",
+          "seriousNumAffected": 0,
+          "seriousNumAtRisk": 20,
+          "otherNumAffected": 0,
+          "otherNumAtRisk": 20
+        },
+        {
+          "id": "EG001",
+          "title": "Placebo",
+          "description": "1 tablet BID given for 7 days before surgery",
+          "seriousNumAffected": 0,
+          "seriousNumAtRisk": 20,
+          "otherNumAffected": 0,
+          "otherNumAtRisk": 20
+        }
+      ]
+    },
+    "moreInfoModule": {
+      "limitationsAndCaveats": {
+        "description": "The most prominent factor that limited enrollment was this period of time was at the point that the FDA released its finding about the possible cardiac risks associated with Rofecoxib (VIOXX)."
+      },
+      "certainAgreement": {
+        "piSponsorEmployee": false,
+        "restrictiveAgreement": false
+      },
+      "pointOfContact": {
+        "title": "Martin J. Heslin M.D.",
+        "organization": "University of Alabama at Birmingham",
+        "email": "marty.heslin@ccc.uab.edu",
+        "phone": "205-975-0450"
+      }
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2025-05-01"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D002277",
+          "term": "Carcinoma"
+        },
+        {
+          "id": "D000236",
+          "term": "Adenoma"
+        },
+        {
+          "id": "D015179",
+          "term": "Colorectal Neoplasms"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D009375",
+          "term": "Neoplasms, Glandular and Epithelial"
+        },
+        {
+          "id": "D009370",
+          "term": "Neoplasms by Histologic Type"
+        },
+        {
+          "id": "D009369",
+          "term": "Neoplasms"
+        },
+        {
+          "id": "D007414",
+          "term": "Intestinal Neoplasms"
+        },
+        {
+          "id": "D005770",
+          "term": "Gastrointestinal Neoplasms"
+        },
+        {
+          "id": "D004067",
+          "term": "Digestive System Neoplasms"
+        },
+        {
+          "id": "D009371",
+          "term": "Neoplasms by Site"
+        },
+        {
+          "id": "D004066",
+          "term": "Digestive System Diseases"
+        },
+        {
+          "id": "D005767",
+          "term": "Gastrointestinal Diseases"
+        },
+        {
+          "id": "D003108",
+          "term": "Colonic Diseases"
+        },
+        {
+          "id": "D007410",
+          "term": "Intestinal Diseases"
+        },
+        {
+          "id": "D012002",
+          "term": "Rectal Diseases"
+        }
+      ],
+      "browseLeaves": [
+        {
+          "id": "M5534",
+          "name": "Carcinoma",
+          "asFound": "Carcinoma",
+          "relevance": "HIGH"
+        },
+        {
+          "id": "M3591",
+          "name": "Adenoma",
+          "asFound": "Adenoma",
+          "relevance": "HIGH"
+        },
+        {
+          "id": "M17890",
+          "name": "Colorectal Neoplasms",
+          "asFound": "Colorectal Carcinoma",
+          "relevance": "HIGH"
+        },
+        {
+          "id": "M12320",
+          "name": "Neoplasms, Glandular and Epithelial",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M12315",
+          "name": "Neoplasms by Histologic Type",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M10448",
+          "name": "Intestinal Neoplasms",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M7256",
+          "name": "Digestive System Neoplasms",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M8886",
+          "name": "Gastrointestinal Neoplasms",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M7255",
+          "name": "Digestive System Diseases",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M8883",
+          "name": "Gastrointestinal Diseases",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M6336",
+          "name": "Colonic Diseases",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M10444",
+          "name": "Intestinal Diseases",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M14844",
+          "name": "Rectal Diseases",
+          "relevance": "LOW"
+        }
+      ],
+      "browseBranches": [
+        {
+          "abbrev": "BC04",
+          "name": "Neoplasms"
+        },
+        {
+          "abbrev": "All",
+          "name": "All Conditions"
+        },
+        {
+          "abbrev": "BC06",
+          "name": "Digestive System Diseases"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D000068579",
+          "term": "Celecoxib"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D000894",
+          "term": "Anti-Inflammatory Agents, Non-Steroidal"
+        },
+        {
+          "id": "D018712",
+          "term": "Analgesics, Non-Narcotic"
+        },
+        {
+          "id": "D000700",
+          "term": "Analgesics"
+        },
+        {
+          "id": "D018689",
+          "term": "Sensory System Agents"
+        },
+        {
+          "id": "D018373",
+          "term": "Peripheral Nervous System Agents"
+        },
+        {
+          "id": "D045505",
+          "term": "Physiological Effects of Drugs"
+        },
+        {
+          "id": "D000893",
+          "term": "Anti-Inflammatory Agents"
+        },
+        {
+          "id": "D018501",
+          "term": "Antirheumatic Agents"
+        },
+        {
+          "id": "D052246",
+          "term": "Cyclooxygenase 2 Inhibitors"
+        },
+        {
+          "id": "D016861",
+          "term": "Cyclooxygenase Inhibitors"
+        },
+        {
+          "id": "D004791",
+          "term": "Enzyme Inhibitors"
+        },
+        {
+          "id": "D045504",
+          "term": "Molecular Mechanisms of Pharmacological Action"
+        }
+      ],
+      "browseLeaves": [
+        {
+          "id": "M277",
+          "name": "Celecoxib",
+          "asFound": "Nicotine",
+          "relevance": "HIGH"
+        },
+        {
+          "id": "M4217",
+          "name": "Anti-Inflammatory Agents",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M4218",
+          "name": "Anti-Inflammatory Agents, Non-Steroidal",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M4032",
+          "name": "Analgesics",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M20786",
+          "name": "Analgesics, Non-Narcotic",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M20604",
+          "name": "Antirheumatic Agents",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M27009",
+          "name": "Cyclooxygenase 2 Inhibitors",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M19209",
+          "name": "Cyclooxygenase Inhibitors",
+          "relevance": "LOW"
+        },
+        {
+          "id": "M7951",
+          "name": "Enzyme Inhibitors",
+          "relevance": "LOW"
+        }
+      ],
+      "browseBranches": [
+        {
+          "abbrev": "Infl",
+          "name": "Anti-Inflammatory Agents"
+        },
+        {
+          "abbrev": "ARhu",
+          "name": "Antirheumatic Agents"
+        },
+        {
+          "abbrev": "Analg",
+          "name": "Analgesics"
+        },
+        {
+          "abbrev": "All",
+          "name": "All Drugs and Chemicals"
+        }
+      ]
+    }
+  },
+  "hasResults": true
+}
